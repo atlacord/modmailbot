@@ -291,7 +291,7 @@ async function createNewThreadForUser(user, opts = {}) {
 
       if (config.rolesInThreadHeader && guildData.member.roles.length) {
         const roles = guildData.member.roles.map(roleId => guildData.guild.roles.get(roleId)).filter(Boolean);
-        headerItems.push(`ROLES **${roles.map(r => r.name).join(", ")}**`);
+        headerItems.push(`ROLES **${roles.sort((a, b) => b.position - a.position).map(r => `<@&${r.id}>`).join(", ")}**`);
       }
 
       const headerStr = headerItems.join(", ");

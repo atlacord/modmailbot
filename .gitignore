@@ -3,6 +3,7 @@
 /node_modules
 /welcome.png
 /update.sh
+/src/.env
 
 # Config files
 /config.*
