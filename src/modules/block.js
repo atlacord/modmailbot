@@ -48,7 +48,19 @@ module.exports = ({ bot, knex, config, commands }) => {
       ? moment.utc().add(args.blockTime, "ms").format("YYYY-MM-DD HH:mm:ss")
       : null;
 
-    const user = bot.users.get(userIdToBlock);
+    let user = bot.users.get(userIdToBlock);
+
+    if (! user) {
+      try {
+        console.log(`Getting data for user ${userIdToBlock} from the REST API...`);
+        user = await bot.getRESTUser(userIdToBlock);
+      } catch (e) {
+        console.log(e);
+        channel.createMessage(`Unable to block user due to an internal error.`);
+        return;
+      }
+    }
+
     await blocked.block(userIdToBlock, (user ? user.username : ""), msg.author.id, expiresAt);
 
     if (expiresAt) {
