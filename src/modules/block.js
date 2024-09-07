@@ -32,6 +32,18 @@ module.exports = ({ bot, knex, config, commands }) => {
 
   expiredBlockLoop();
 
+  async function getUserREST(userId) {
+    let user; 
+    try {
+      console.log(`Getting data for user ${userId} from the REST API...`);
+      user = await bot.getRESTUser(userId);
+    } catch (e) {
+      console.log(e);
+    }
+
+    return user;
+  }
+
   const blockCmd = async (msg, args, thread) => {
     const userIdToBlock = args.userId || (thread && thread.user_id);
     if (! userIdToBlock) return;
@@ -48,18 +60,8 @@ module.exports = ({ bot, knex, config, commands }) => {
       ? moment.utc().add(args.blockTime, "ms").format("YYYY-MM-DD HH:mm:ss")
       : null;
 
-    let user = bot.users.get(userIdToBlock);
-
-    if (! user) {
-      try {
-        console.log(`Getting data for user ${userIdToBlock} from the REST API...`);
-        user = await bot.getRESTUser(userIdToBlock);
-      } catch (e) {
-        console.log(e);
-        channel.createMessage(`Unable to block user due to an internal error.`);
-        return;
-      }
-    }
+    let user = bot.users.get(userIdToBlock) || await getUserREST(userIdToBlock);
+    if (! user) return channel.createMessage(`Unable to block user due to an internal error.`);
 
     await blocked.block(userIdToBlock, (user ? user.username : ""), msg.author.id, expiresAt);
 
@@ -102,7 +104,9 @@ module.exports = ({ bot, knex, config, commands }) => {
       ? moment.utc().add(args.unblockDelay, "ms").format("YYYY-MM-DD HH:mm:ss")
       : null;
 
-    const user = bot.users.get(userIdToUnblock);
+    let user = bot.users.get(userIdToUnblock) || await getUserREST(userIdToUnblock);
+    if (! user) return channel.createMessage(`Unable to unblock user due to an internal error.`);
+
     if (unblockAt) {
       const humanized = humanizeDuration(args.unblockDelay, { largest: 2, round: true });
       await blocked.updateExpiryTime(userIdToUnblock, unblockAt);
