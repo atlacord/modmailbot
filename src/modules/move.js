@@ -11,9 +11,16 @@ module.exports = ({ bot, knex, config, commands }) => {
     const normalizedSearchStr = transliterate.slugify(searchStr);
 
     const channel = await getOrFetchChannel(bot, msg.channel.id);
-    const categories = channel.guild.channels.filter(c => {
+    const categories = bot.guilds.get(msg.guildID).channels.filter(c => {
+      if (config.allowedCategories && config.allowedCategories.length) {
+        if (config.allowedCategories.find(id => id === c.id)) {
+          return true;
+        }
+
+        return false;
+      }
       // Filter to categories that are not the thread's current parent category
-      return (c instanceof Eris.CategoryChannel) && (c.id !== channel.parentID);
+      return (c instanceof Eris.CategoryChannel) && (c.id !== msg.channel.parentID);
     });
 
     if (categories.length === 0) return;
