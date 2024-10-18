@@ -337,20 +337,6 @@ async function createNewThreadForUser(user, opts = {}) {
 }
 
 /**
- * Sync the permissions of a thread channel to the parent category
- * @param {Eris.GuildTextableChannel} channel The channel object of the thread channel
- * @param {Eris.CategoryChannel} category The parent category to sync permissions with
- */
-function syncThreadChannel(channel, category) {
-  const overwrites = category.permissionOverwrites;
-  if (! overwrites) return;
-  for (let o of overwrites.values()) {
-    if (o.id === channel.guild.id) continue;
-    channel.editPermission(o.id, o.allow, o.deny, o.type, "Moving modmail thread.");
-  }
-}
-
-/**
  * Move a thread channel to a different category
  * @param {Thread} thread The thread object
  * @param {Eris.CategoryChannel} targetCategory The category to move the specified thread to
@@ -359,34 +345,40 @@ function syncThreadChannel(channel, category) {
 async function moveThread(thread, targetCategory, mentionRole) {
   const threadChannel = targetCategory.guild.channels.get(thread.channel_id);
 
-  await clearThreadOverwrites(threadChannel);
-
   threadChannel.edit({
     parentID: targetCategory.id
   }).then(() => {
-    syncThreadChannel(threadChannel, targetCategory);
 
     // Make thread private/unprivate
-    if (targetCategory.id !== config.newThreadCategoryId && targetCategory.id !== config.communityThreadCategoryId && targetCategory.id !== config.supportThreadCategoryId) {
+    if (targetCategory.id !== config.categoryAutomation.newThread && targetCategory.id !== config.communityThreadCategoryId) {
       thread.makePrivate();
 
-      // Ping Admins if necessary
-      if (Array.isArray(mentionRole)) {
-        if (mentionRole.length !== 0) {
+      if (mentionRole) {
+        // Ping Admins if necessary
+        if (Array.isArray(mentionRole)) {
+          if (mentionRole.length !== 0) {
+            threadChannel.createMessage({
+              content: `${mentionRole.map((r) => `<@&${r}>`).join(" ")}, a thread has been moved.`,
+              allowedMentions: {
+                roles: true
+              }
+            });
+          }
+        } else if (config.adminMentionRole) {
           threadChannel.createMessage({
-            content: `${mentionRole.map((r) => `<@&${r}>`).join(" ")}, a thread has been moved.`,
+            content: `<@&${config.adminMentionRole}>, a thread has been moved.`,
             allowedMentions: {
               roles: true
             }
           });
+        } else if (config.adminHerePing || config.adminEveryonePing) {
+          threadChannel.createMessage({
+            content: `${config.adminHerePing ? `@here` : `@everyone`}, a thread has been moved.`,
+            allowedMentions: {
+              everyone: true
+            }
+          });
         }
-      } else if (config.adminMentionRole && mentionRole) {
-        threadChannel.createMessage({
-          content: `<@&${config.adminMentionRole}>, a thread has been moved.`,
-          allowedMentions: {
-            roles: true
-          }
-        });
       }
     } else {
       thread.makePublic();
@@ -552,7 +544,6 @@ module.exports = {
   findOrCreateThreadForUser,
   getThreadsThatShouldBeClosed,
   getThreadsThatShouldBeSuspended,
-  syncThreadChannel,
   moveThread,
   createThreadInDB,
   getAllOpenThreads,
