@@ -768,9 +768,9 @@ class Thread {
     // Delete channel
     const channel = bot.getChannel(this.channel_id);
     if (channel) {
-      if (this.isPrivate && (channel.parentID == config.newThreadCategoryId || channel.parentID == config.communityThreadCategoryId)) {
+      if (this.isPrivate && (channel.parentID == config.categoryAutomation.newThread || channel.parentID == config.communityThreadCategoryId)) {
         this.makePublic();
-      } else if (! this.isPrivate && (channel.parentID != config.newThreadCategoryId && channel.parentID != config.communityThreadCategoryId)) {
+      } else if (! this.isPrivate && (channel.parentID != config.categoryAutomation.newThread && channel.parentID != config.communityThreadCategoryId)) {
         this.makePrivate();
       }
       console.log(`Deleting channel ${this.channel_id}`);
