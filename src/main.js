@@ -365,6 +365,7 @@ function getBasePlugins() {
     "file:./src/modules/snippets",
     "file:./src/modules/suspend",
     "file:./src/modules/greeting",
+    "file:./src/modules/hide",
     "file:./src/modules/webserverPlugin",
     "file:./src/modules/typingProxy",
     "file:./src/modules/version",
