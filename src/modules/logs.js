@@ -28,6 +28,11 @@ module.exports = ({ bot, knex, config, commands, hooks }) => {
     const channel = await getOrFetchChannel(bot, msg.channel.id);
     let userThreads = await threads.getClosedThreadsByUserId(userId);
 
+    // Command isn't being used in an admin channel or thread
+    if (! [msg.channel.parentID, msg.channel.id].includes('370708369951948802')) {
+      userThreads = userThreads.filter((t) => ! t.isPrivate);
+    }
+
     // Descending by date
     userThreads.sort((a, b) => {
       if (a.created_at > b.created_at) return -1;
@@ -51,7 +56,8 @@ module.exports = ({ bot, knex, config, commands, hooks }) => {
         ? `<${addOptQueryStringToUrl(logUrl, args)}>`
         : `View log with \`${config.prefix}log ${userThread.thread_number}\``
       const formattedDate = moment.utc(userThread.created_at).format("MMM Do YYYY [at] HH:mm [UTC]");
-      return `\`#${userThread.thread_number}\` \`${formattedDate}\`: ${formattedLogUrl}`;
+      const adminThread = userThread.isPrivate ? ' \`[Admin-Only]\`' : '';
+      return `\`#${userThread.thread_number}\` \`${formattedDate}\`${adminThread}: ${formattedLogUrl}`;
     }));
 
     let message = isPaginated

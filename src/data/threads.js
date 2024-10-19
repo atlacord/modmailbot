@@ -337,6 +337,56 @@ async function createNewThreadForUser(user, opts = {}) {
 }
 
 /**
+ * Move a thread channel to a different category
+ * @param {Thread} thread The thread object
+ * @param {Eris.CategoryChannel} targetCategory The category to move the specified thread to
+ * @param {Boolean | Array<String>} mentionRole Whether the bot should mention the adminMentionRole, or an array of role IDs to be pinged if supplied
+ */
+async function moveThread(thread, targetCategory, mentionRole) {
+  const threadChannel = targetCategory.guild.channels.get(thread.channel_id);
+
+  threadChannel.edit({
+    parentID: targetCategory.id
+  }).then(() => {
+
+    // Make thread private/unprivate
+    if (targetCategory.id !== config.categoryAutomation.newThread && targetCategory.id !== config.communityThreadCategoryId) {
+      thread.makePrivate();
+
+      if (mentionRole) {
+        // Ping Admins if necessary
+        if (Array.isArray(mentionRole)) {
+          if (mentionRole.length !== 0) {
+            threadChannel.createMessage({
+              content: `${mentionRole.map((r) => `<@&${r}>`).join(" ")}, a thread has been moved.`,
+              allowedMentions: {
+                roles: true
+              }
+            });
+          }
+        } else if (config.adminMentionRole) {
+          threadChannel.createMessage({
+            content: `<@&${config.adminMentionRole}>, a thread has been moved.`,
+            allowedMentions: {
+              roles: true
+            }
+          });
+        } else if (config.adminHerePing || config.adminEveryonePing) {
+          threadChannel.createMessage({
+            content: `${config.adminHerePing ? `@here` : `@everyone`}, a thread has been moved.`,
+            allowedMentions: {
+              everyone: true
+            }
+          });
+        }
+      }
+    } else {
+      thread.makePublic();
+    }
+  });
+}
+
+/**
  * Creates a new thread row in the database
  * @param {Object} data
  * @returns {Promise<String>} The ID of the created thread
@@ -494,6 +544,7 @@ module.exports = {
   findOrCreateThreadForUser,
   getThreadsThatShouldBeClosed,
   getThreadsThatShouldBeSuspended,
+  moveThread,
   createThreadInDB,
   getAllOpenThreads,
   findThreadMessageByDMMessageId,

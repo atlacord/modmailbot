@@ -38,6 +38,8 @@ module.exports = ({ bot, knex, config, commands }) => {
   }
 
   async function sendCloseNotification(thread, body) {
+    if (thread.isPrivate) return;
+
     const logCustomResponse = await getLogCustomResponse(thread);
     if (logCustomResponse) {
       await utils.postLog(body);
