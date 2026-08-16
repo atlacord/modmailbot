@@ -86,11 +86,22 @@ function isStaff(member) {
       if (member.roles.includes(perm)) return true;
     } else {
       // Otherwise assume perm is the name of a permission
-      return member.permission.has(perm);
+      return member.permissions.has(perm);
     }
 
     return false;
   });
+}
+
+/**
+ * Returns whether the given member has an administrator role
+ * @param {Eris.Member} member
+ * @returns {boolean}
+ */
+function isAdmin(member) {
+  if (! config.inboxAdminRoleIDs.length) return false;
+  if (! member) return false;
+  return member.roles.some((r) => config.inboxAdminRoleIDs.includes(r));
 }
 
 /**
@@ -202,7 +213,10 @@ async function getSelfUrl(path = "") {
     return `${config.url}/${path}`;
   } else {
     const port = config.port || 8890;
-    const ip = await getSelfIp();
+    let ip = await getSelfIp();
+    if (net.isIPv6(ip)) {
+      ip = `[${ip}]`
+    }
     return `http://${ip}:${port}/${path}`;
   }
 }
@@ -579,6 +593,7 @@ module.exports = {
   postLog,
 
   isStaff,
+  isAdmin,
   messageIsOnInboxServer,
   messageIsOnMainServer,
 

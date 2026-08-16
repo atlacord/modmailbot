@@ -81,6 +81,18 @@ ID of a channel on the inbox server where logs are posted after a modmail thread
 **Default:** `Your Discord account is not old enough to contact modmail.`  
 See `requiredAccountAge` below
 
+#### adminMentionRole
+**Default:** *None*
+The role to mention when a thread is moved to an admin category. The bot will ping in the moved thread. Set to `off` to disable
+
+#### adminHerePing
+**Default:** *None*
+Pings @here when a thread is moved to the admin category. Disable adminMentionRole before enabling [might change in a future update]
+
+#### adminEveryonePing
+**Default:** *None*
+Pings @everyone when a thread is moved to the admin category. Disable adminMentionRole and adminHerePing before enabling [might change in a future update]
+
 #### allowMove
 **Default:** `off`  
 If enabled, allows you to move threads between categories using `!move <category>`
@@ -128,6 +140,10 @@ If enabled, moderators can change the role that's shown with their replies to an
 **Default:** `on`  
 If enabled, moderators can add notes on users using the `!note` command.
 
+#### allowedCategories
+**Default:** *None*
+**Accepts multiple values.** Category IDs that modmail threads can be moved to
+
 #### alwaysReply
 **Default:** `off`  
 If enabled, all messages in modmail threads will be sent to the user without having to use `!r`.  
@@ -169,6 +185,12 @@ The delay after which `autoAlert` kicks in. Uses the same format as timed close;
 **Default:** *None*  
 If set, the bot auto-replies to bot mentions (pings) with this message. Use `{userMention}` in the text to ping the user back.
 
+Note that the bot will ignore mentions in messages on the main server if any of the following are true:
+* The message author is the owner of the inbox server
+* [`inboxServerPermission`](#inboxServerPermission) has not been configured
+* The message author matches an `inboxServerPermission`
+* The message author is the bot
+
 #### categoryAutomation.newThread
 **Default:** *None*  
 ID of the category where new threads are opened. Also functions as a fallback for `categoryAutomation.newThreadFromServer`.
@@ -208,6 +230,10 @@ commandAliases.replysus = reply Thank you for this, we will suspend this thread 
 commandAliases.replysus = suspend
 ```
 
+#### communityThreadCategoryId
+**Default:** *None*
+The ID of the Community category
+
 #### enableGreeting
 **Default:** `off`  
 If enabled, the bot will send a greeting DM to users that join the main server
@@ -243,6 +269,10 @@ Alias for [`serverGreetings`](#serverGreetings)
 #### ignoreAccidentalThreads
 **Default:** `off`  
 If enabled, the bot attempts to ignore common "accidental" messages that would start a new thread, such as "ok", "thanks", etc.
+
+#### inboxAdminRoleIDs
+**Default:** *None*
+**Accepts multiple values.** Role IDs on the inbox server that will be used for admin command permission checks.
 
 #### inboxServerPermission
 **Default:** `manageMessages`  
@@ -308,6 +338,11 @@ If enabled, a system message will be posted into any open threads if the user jo
 **Default:** `on`  
 If enabled, a system message will be posted into any open threads if the user leaves a main server
 
+#### overrideRoleNameDisplay
+**Default:** `None`  
+Role name to display in all replies. This completely overrides normal role selection, all replies will contain the string entered. For example; `overrideRoleNameDisplay = Moderator`
+
+
 #### pingOnBotMention
 **Default:** `on`  
 If enabled, the bot will mention staff (see `mentionRole` option) on the inbox server when the bot is mentioned on the main server.
@@ -337,6 +372,15 @@ If enabled, the bot will react to messages sent to it with the emoji defined in 
 **Default:** `📨`  
 The emoji that the bot will react with when it sees a message.  Requires `reactOnSeen` to be enabled.  
 Must be pasted in the config file as the Emoji representation and not as a unicode codepoint. Use `emojiName:emojiID` for custom emoji.
+
+#### notifyOnReaction
+**Default:** `off`  
+If enabled, the bot will notify staff in the modmail thread when a user reacts to a message sent to them by the bot.
+
+#### notifyOnReactionRemoval
+**Default:** `off`  
+If enabled, the bot will notify staff in the modmail thread when a user removes a reaction from a message sent to them by the bot.  
+Requires `notifyOnReaction` to be enabled for reactions to be tracked.
 
 #### relaySmallAttachmentsAsAttachments
 **Default:** `off`  
@@ -394,7 +438,7 @@ The bot's status text. Set to `none` to disable.
 
 #### statusType
 **Default:** `playing`  
-The bot's status type. One of `playing`, `watching`, `listening`, `streaming`.
+The bot's status type. One of `playing`, `watching`, `listening`, `streaming`, `custom`, `competing`.
 
 #### statusUrl
 **Default:** [nothing]  
@@ -462,6 +506,11 @@ URL to use for attachment and log links. Defaults to `http://IP:PORT/`.
 #### useNicknames
 **Default:** `off`  
 If enabled, mod replies will use their nicknames (on the inbox server) instead of their usernames
+
+#### useDisplaynames
+**Default:** `on`  
+If enabled, the bot will use the users display name instead of their username where it makes sense  
+Setting `useNicknames` to `on` will override this in most cases  
 
 #### useGitForGitHubPlugins
 **Default:** `off`  

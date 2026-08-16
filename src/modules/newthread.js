@@ -21,14 +21,18 @@ module.exports = ({ bot, knex, config, commands }) => {
       return;
     }
 
+    const openPrivateThread = [msg.channel.parentID, msg.channel.id].includes(config.adminChannelId) ? true : false;
+
     const createdThread = await threads.createNewThreadForUser(user, {
       quiet: true,
       ignoreRequirements: true,
       ignoreHooks: true,
+      isPrivate: openPrivateThread ? true : false,
       source: "command",
+      categoryId: openPrivateThread ? config.adminCategoryId : null
     });
 
-    createdThread.postSystemMessage(`Thread was opened by ${msg.author.username}`);
+    createdThread.postSystemMessage(`Thread was opened by ${msg.author.nick || config.useDisplaynames ? msg.author.globalName || msg.author.username : msg.author.username}`);
 
     const channel = await getOrFetchChannel(bot, msg.channel.id);
     channel.createMessage(`Thread opened: <#${createdThread.channel_id}>`);
