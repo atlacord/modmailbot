@@ -3,15 +3,16 @@ const helmet = require("helmet");
 const mime = require("mime");
 const url = require("url");
 const fs = require("fs");
-const path = require("path");
 const jwt = require("jsonwebtoken");
 const qs = require("querystring");
+const path = require("path");
 const moment = require("moment");
 const config = require("../cfg");
 const threads = require("../data/threads");
 const attachments = require("../data/attachments");
 const { formatters } = require("../formatters");
 const { summariseEmbedsAsText } = require("../embedLogging");
+const marked = require("marked");
 
 const API_ENDPOINT = "https://discord.com/api/v9";
 
