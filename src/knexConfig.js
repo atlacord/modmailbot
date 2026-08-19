@@ -7,7 +7,7 @@ if (config.dbType === "sqlite") {
   console.log(`Using an SQLite database:\n  ${resolvedPath}`);
 
   knexOptions = {
-    client: "sqlite",
+    client: "better-sqlite3",
     connection: {
       ...config.sqliteOptions,
     },
