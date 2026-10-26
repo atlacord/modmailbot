@@ -146,6 +146,13 @@ async function createThread(req, res) {
 const server = express();
 server.use(helmet());
 
+if (config.dashAuthRoles || config.dashAuthUsers) {
+  server.get(config.redirectPath, oauth2.login);
+  server.use(oauth2.checkAuth);
+}
+
+server.use(express.static(path.join(__dirname, '../dashboard/')));
+
 server.get("/logs/:threadId", serveLogs);
 server.get("/attachments/:attachmentId/:filename", serveAttachments);
 server.get("/threads/create", createThread);
@@ -155,6 +162,15 @@ if (htmlPrivacyPolicy) {
     res.send(htmlPrivacyPolicy);
   });
 };
+
+server.get('*', (req, res, next) => {
+  const dashboardPath = path.join(__dirname, '../dashboard/dist/index.html');
+  if (fs.existsSync(dashboardPath)) {
+    res.sendFile(dashboardPath);
+  } else {
+    next();
+  }
+});
 
 server.on("error", err => {
   console.log("[WARN] Web server error:", err.message);
