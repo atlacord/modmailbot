@@ -56,6 +56,15 @@ async function serveLogs(req, res) {
   res.send(formatLogResult.content);
 }
 
+
+/**
+ * @param {express.Request} req
+ */
+async function viewPrivateThreads(req) {
+  const user = await oauth2.getAuthUser(req.cookies.token);
+  return oauth2.isDashAdmin(user);
+}
+
 function serveAttachments(req, res) {
   if (req.params.attachmentId.match(/^[0-9]+$/) === null) return notfound(res);
   if (req.params.filename.match(/^[0-9a-z._-]+$/i) === null) return notfound(res);
