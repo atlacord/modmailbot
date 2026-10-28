@@ -1,6 +1,7 @@
 const express = require("express");
 const SSE = require("express-sse");
 const helmet = require("helmet");
+const cors = require("cors");
 const mime = require("mime");
 const url = require("url");
 const knex = require("../knex");
@@ -143,6 +144,7 @@ module.exports = (mmbot, sse) => {
       scriptSrc: ["'self'", "https://cdn.jsdelivr.net"],
     },
   }));
+  server.use(cors());
 
   server.get(config.redirectPath, oauth2.login);
   server.use(oauth2.checkAuth);
