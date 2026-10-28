@@ -147,6 +147,9 @@ server.use(cors());
 server.get(config.redirectPath, oauth2.login);
 
 server.get("/avatars/:id", async (req, res) => {
+  if (!utils.isSnowflake(req.params.id)) {
+    res.set("Cache-Control", "max-age=3600").redirect('https://discordapp.com/assets/dd4dbc0016779df1378e7812eabaa04d.png');
+  }
   const user = bot.users.get(req.params.id) || await bot.getRESTUser(req.params.id).catch(
     /** @param {import('eris').DiscordRESTError | import('eris').DiscordHTTPError} e */
     (e) => {

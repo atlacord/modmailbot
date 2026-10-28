@@ -222,6 +222,19 @@ async function getSelfUrl(path = "") {
   }
 }
 
+function isSnowFlake(snowflake) {
+  if (!Number.isInteger(+snowflake)) {
+    return false;
+  }
+
+  if (snowflake < 4194304) {
+    return false;
+  }
+
+  return true;
+}
+
+
 /**
  * Returns the highest hoisted role of the given member
  * @param {Eris~Member} member
@@ -605,6 +618,7 @@ module.exports = {
   disableLinkPreviews,
   getSelfUrl,
   getMainRole,
+  isSnowflake,
   delayStringRegex,
   convertDelayStringToMS,
 
