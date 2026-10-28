@@ -25,7 +25,7 @@ const THREAD_ID = /^[0-9a-f-]+$/;
 const ID = /^\d+$/;
 
 const API_ENDPOINT = "https://discord.com/api/v9";
-let bot;
+let bot, sse;
 
 function notfound(res) {
   res.status(404).send("Page Not Found");
@@ -275,7 +275,8 @@ server.on("error", err => {
 
 server.listen(config.port, config.host);
 
-module.exports = (mmbot) => {
+module.exports = (mmbot, _sse) => {
   bot = mmbot;
+  sse = _sse;
   return server;
 };
