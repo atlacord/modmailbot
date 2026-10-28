@@ -135,6 +135,9 @@ async function createThread(bot, req, res) {
  */
 module.exports = (mmbot, sse) => {
   bot = mmbot;
+  if (!sse) {
+    sse = new SSE();
+  };
   const server = express();
   server.use(cookieParser());
   server.use(helmet.contentSecurityPolicy({
@@ -143,6 +146,7 @@ module.exports = (mmbot, sse) => {
       imgSrc: ["'self'", "data:", "https://cdn.jsdelivr.net", "https://cdn.discordapp.com"],
       scriptSrc: ["'self'", "https://cdn.jsdelivr.net"],
     },
+    crossOriginResourcePolicy: { policy: "cross-origin" }
   }));
   server.use(cors());
 
