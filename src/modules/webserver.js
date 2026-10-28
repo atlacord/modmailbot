@@ -148,7 +148,6 @@ module.exports = (mmbot, sse) => {
       imgSrc: ["'self'", "data:", "https://cdn.jsdelivr.net", "https://cdn.discordapp.com"],
       scriptSrc: ["'self'", "https://cdn.jsdelivr.net"],
     },
-    crossOriginResourcePolicy: { policy: "cross-origin" }
   }));
   server.use(cors());
 
