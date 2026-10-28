@@ -153,7 +153,7 @@ addStorageType("local", {
   },
 
   getUrl(thread) {
-    return utils.getSelfUrl(`logs/${thread.id}`);
+    return utils.getSelfUrl(`thread/${thread.id}`);
   },
 });
 
