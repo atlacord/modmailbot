@@ -97,9 +97,6 @@ function decodeJwt(token) {
 };
 
 async function createThread(bot, req, res) {
-  console.log("This should be running");
-  res.set("Content-Security-Policy", "script-src 'nonce-hawky'")
-
   if (req.query.t !== undefined) {
     const meta = decodeJwt(req.query.t);
   };
@@ -139,7 +136,13 @@ module.exports = (mmbot, sse) => {
   bot = mmbot;
   const server = express();
   server.use(cookieParser());
-  server.use(helmet());
+  server.use(helmet.contentSecurityPolicy({
+    useDefaults: true,
+    directives: {
+      imgSrc: ["'self'", "data:", "https://cdn.jsdelivr.net", "https://cdn.discordapp.com"],
+      scriptSrc: ["'self'", "https://cdn.jsdelivr.net"],
+    },
+  }));
 
   server.get(config.redirectPath, oauth2.login);
   server.use(oauth2.checkAuth);
@@ -260,7 +263,10 @@ module.exports = (mmbot, sse) => {
       });
     if (! user) return;
 
-    res.set("Cache-Control", "max-age=3600").redirect(user.avatarURL);
+    const r = await fetch(user.avatarURL);
+    res.set("Content-Type", r.headers.get("content-type"));
+    res.set("Cache-Control", "public, max-age=3600");
+  res.send(Buffer.from(await r.arrayBuffer()));
   });
 
   server.get("/stream", sse.init);
