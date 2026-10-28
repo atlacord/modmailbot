@@ -193,12 +193,15 @@ server.get("/threads", async (req, res) => {
 
   if (!viewAll) {
     q.where("isPrivate", 0);
-    q.where("status", constants.THREAD_STATUS.CLOSED);
   } else {
     if (privacy === "private") q.where("isPrivate", 1);
     if (privacy === "public") q.where("isPrivate", 0);
-    if (status === "open") q.where("status", constants.THREAD_STATUS.OPEN);
-    else if (status === "closed") q.where("status", constants.THREAD_STATUS.CLOSED);
+  };
+    
+  if (status === "open") {
+    q.where("status", constants.THREAD_STATUS.OPEN);
+  } else if (status === "closed") {
+    q.where("status", constants.THREAD_STATUS.CLOSED);
   };
 
   if (user) {
