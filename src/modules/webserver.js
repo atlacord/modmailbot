@@ -271,6 +271,11 @@ module.exports = (mmbot, sse) => {
 
   server.get("/stream", sse.init);
 
+  // Client-side routes from the dashboard's Vue router; serve the app so it can handle them
+  server.get(["/thread/:id", "/settings/:category"], (req, res) => {
+    res.sendFile(path.join(__dirname, '../dashboard/dist/index.html'));
+  });
+
   server.on("error", err => {
     console.log("[WARN] Web server error:", err.message);
   });
