@@ -20,12 +20,13 @@ const cookieParser = require('cookie-parser');
 const marked = require("marked");
 const constants = require("../utils/constants");
 const utils = require("../utils/utils");
+const bot = require("../bot");
 
 const THREAD_ID = /^[0-9a-f-]+$/;
 const ID = /^\d+$/;
 
 const API_ENDPOINT = "https://discord.com/api/v9";
-let bot, sse;
+var sse;
 
 function notfound(res) {
   res.status(404).send("Page Not Found");
@@ -273,8 +274,7 @@ server.on("error", err => {
   console.log("[WARN] Web server error:", err.message);
 });
 
-module.exports = (mmbot, _sse) => {
-  bot = mmbot;
+module.exports = (_sse) => {
   sse = _sse;
   return server;
 };
