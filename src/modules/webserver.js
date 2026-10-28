@@ -145,27 +145,6 @@ server.use(helmet.contentSecurityPolicy({
 server.use(cors());
 
 server.get(config.redirectPath, oauth2.login);
-
-server.get("/avatars/:id", async (req, res) => {
-  if (!utils.isSnowflake(req.params.id)) {
-    res.set("Cache-Control", "max-age=3600").redirect('https://discordapp.com/assets/dd4dbc0016779df1378e7812eabaa04d.png');
-    return;
-  }
-  const user = bot.users.get(req.params.id) || await bot.getRESTUser(req.params.id).catch(
-    /** @param {import('eris').DiscordRESTError | import('eris').DiscordHTTPError} e */
-    (e) => {
-      if (e.code === 404 || e.code === 10013) {
-        res.status(400).send("<pre>400 Bad Request</pre>");
-      } else {
-        process.emit("unhandledRejection", e);
-        res.status(500).send(`<pre>500 Server Error: ${e}</pre>`);
-      }
-      return null;
-    });
-  if (! user) return;
-  res.set("Cache-Control", "max-age=3600").redirect(user.avatarURL);
-});
-
 server.use(oauth2.checkAuth);
 
 server.use(express.static(path.join(__dirname, '../dashboard/dist/')));
@@ -268,6 +247,27 @@ server.get("/logs/:id", async (req, res) => {
   const logs = await thread.getThreadMessages();
 
   res.json(logs);
+});
+
+server.get("/avatars/:id", async (req, res) => {
+  if (!req.params.id) return;
+  if (!utils.isSnowflake(req.params.id)) {
+    res.set("Cache-Control", "max-age=3600").redirect('https://discordapp.com/assets/dd4dbc0016779df1378e7812eabaa04d.png');
+    return;
+  }
+  const user = bot.users.get(req.params.id) || await bot.getRESTUser(req.params.id).catch(
+    /** @param {import('eris').DiscordRESTError | import('eris').DiscordHTTPError} e */
+    (e) => {
+      if (e.code === 404 || e.code === 10013) {
+        res.status(400).send("<pre>400 Bad Request</pre>");
+      } else {
+        process.emit("unhandledRejection", e);
+        res.status(500).send(`<pre>500 Server Error: ${e}</pre>`);
+      }
+      return null;
+    });
+  if (! user) return;
+  res.set("Cache-Control", "max-age=3600").redirect(user.avatarURL);
 });
 
 server.get("/stream", sse.init);
