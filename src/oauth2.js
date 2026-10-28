@@ -4,6 +4,8 @@ const config = require("./cfg");
 const bot = require("./bot");
 const utils = require("./utils/utils");
 
+const authCache = new Map();
+
 function login (req, res) {
   utils.getSelfUrl(config.redirectPath.slice(1)).then(redirectUri => {
     let code = req.query.code;
@@ -46,6 +48,8 @@ function isDashAdmin (user) {
 }
 
 async function getAuthUser (token) {
+  const cached = authCache.get(token);
+  if (cached && cached.expires > Date.now()) return cached.user;
   let user;
 
   try {
@@ -58,6 +62,7 @@ async function getAuthUser (token) {
     return;
   }
 
+  authCache.set(token, { user, expires: Date.now() + 5 * 60 * 1000 });
   return user;
 }
 
@@ -82,10 +87,10 @@ async function checkAuth (req, res, next) {
         if (isAuthorized) {
           return next();
         }
-      } else {
-        res.status(401);
-        res.send("<pre>401 Unauthorized</pre>");
       }
+      
+      res.status(401);
+      res.send("<pre>401 Unauthorized</pre>");
     }
   } else {
     res.redirect("/login");
