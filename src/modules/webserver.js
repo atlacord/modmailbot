@@ -145,8 +145,8 @@ module.exports = (mmbot, sse) => {
   server.use(helmet.contentSecurityPolicy({
     useDefaults: true,
     directives: {
-      imgSrc: ["'self'", "data:", "https://cdn.jsdelivr.net", "https://cdn.discordapp.com"],
-      scriptSrc: ["'self'", "https://cdn.jsdelivr.net"],
+      imgSrc: ["self", "https://cdn.jsdelivr.net", "https://cdn.discordapp.com"],
+      scriptSrc: ["self", "https://cdn.jsdelivr.net"],
     },
   }));
   server.use(cors());
