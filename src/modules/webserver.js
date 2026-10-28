@@ -266,6 +266,7 @@ module.exports = (mmbot, sse) => {
         return null;
       });
     if (! user) return;
+    res.set("Access-Control-Allow-Origin", "*");
     res.set("Cache-Control", "max-age=3600").redirect(user.avatarURL);
   });
 
