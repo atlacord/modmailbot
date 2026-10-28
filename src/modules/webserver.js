@@ -270,11 +270,7 @@ module.exports = (mmbot, sse) => {
         return null;
       });
     if (! user) return;
-
-    const r = await fetch(user.avatarURL);
-    res.set("Content-Type", r.headers.get("content-type"));
-    res.set("Cache-Control", "public, max-age=3600");
-  res.send(Buffer.from(await r.arrayBuffer()));
+    res.set("Cache-Control", "max-age=3600").redirect(user.avatarURL);
   });
 
   server.get("/stream", sse.init);
