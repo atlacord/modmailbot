@@ -5,6 +5,7 @@
 /update.sh
 .env
 src/dashboard
+*.DS_Store
 
 # Config files
 *.config.ini
