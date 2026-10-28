@@ -145,8 +145,8 @@ module.exports = (mmbot, sse) => {
   server.use(helmet.contentSecurityPolicy({
     useDefaults: true,
     directives: {
-      imgSrc: ["self", "https://cdn.jsdelivr.net", "https://cdn.discordapp.com"],
-      scriptSrc: ["self", "https://cdn.jsdelivr.net"],
+      imgSrc: ["'self'", "data:", "https://cdn.jsdelivr.net", "https://cdn.discordapp.com"],
+      scriptSrc: ["'self'", "https://cdn.jsdelivr.net"],
     },
   }));
   server.use(cors());
@@ -155,12 +155,9 @@ module.exports = (mmbot, sse) => {
   server.use(oauth2.checkAuth);
 
   server.use(express.static(path.join(__dirname, '../dashboard/dist/')));
-  server.use((req, res, next) => {
-    res.set("Access-Control-Allow-Origin", "*");
-    next();
-  });
 
   server.use((req, res, next) => {
+    res.set("Access-Control-Allow-Origin", "*");
     res.flush = () => undefined;
     next();
   });
