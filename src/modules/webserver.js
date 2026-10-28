@@ -25,7 +25,7 @@ const THREAD_ID = /^[0-9a-f-]+$/;
 const ID = /^\d+$/;
 
 const API_ENDPOINT = "https://discord.com/api/v9";
-var bot;
+let bot;
 
 function notfound(res) {
   res.status(404).send("Page Not Found");
@@ -128,157 +128,154 @@ async function createThread(bot, req, res) {
   res.status(400);
 };
 
-/**
- * 
- * @param {*} bot 
- * @param {SSE} sse 
- */
-module.exports = (mmbot, sse) => {
-  bot = mmbot;
+if (!sse) {
+  sse = new SSE();
+};
 
-  if (!sse) {
-    sse = new SSE();
-  };
+const server = express();
+server.use(cookieParser());
+server.use(helmet.contentSecurityPolicy({
+  useDefaults: true,
+  directives: {
+    imgSrc: ["'self'", "data:", "https://cdn.jsdelivr.net", "https://cdn.discordapp.com"],
+    scriptSrc: ["'self'", "https://cdn.jsdelivr.net"],
+  },
+}));
+server.use(cors());
+
+server.get(config.redirectPath, oauth2.login);
+
+server.get("/avatars/:id", async (req, res) => {
+  const user = bot.users.get(req.params.id) || await bot.getRESTUser(req.params.id).catch(
+    /** @param {import('eris').DiscordRESTError | import('eris').DiscordHTTPError} e */
+    (e) => {
+      if (e.code === 404 || e.code === 10013) {
+        res.status(400).send("<pre>400 Bad Request</pre>");
+      } else {
+        process.emit("unhandledRejection", e);
+        res.status(500).send(`<pre>500 Server Error: ${e}</pre>`);
+      }
+      return null;
+    });
+  if (! user) return;
+  res.set("Cache-Control", "max-age=3600").redirect(user.avatarURL);
+});
+
+server.use(oauth2.checkAuth);
+
+server.use(express.static(path.join(__dirname, '../dashboard/dist/')));
+
+server.use((req, res, next) => {
+  res.set("Access-Control-Allow-Origin", "*");
+  res.flush = () => undefined;
+  next();
+});
+
+server.get("/threads", async (req, res) => {
+  let { limit: lim, page, user, sort_by, reverse, privacy, status } = req.query;
+  let limit = parseInt(lim) || 50;
+
+  if (limit < 1) limit = 1;
+  if (limit > 100) limit = 100;
+
+  page = parseInt(page) || 0;
+  reverse = reverse != null;
   
-  const server = express();
-  server.use(cookieParser());
-  server.use(helmet.contentSecurityPolicy({
-    useDefaults: true,
-    directives: {
-      imgSrc: ["'self'", "data:", "https://cdn.jsdelivr.net", "https://cdn.discordapp.com"],
-      scriptSrc: ["'self'", "https://cdn.jsdelivr.net"],
-    },
-  }));
-  server.use(cors());
+  let q = knex("threads");
 
-  server.get(config.redirectPath, oauth2.login);
+  // Send necessary threads only
+  const viewAll = await viewPrivateThreads(req);
 
-  server.get("/avatars/:id", async (req, res) => {
-    const user = bot.users.get(req.params.id) || await bot.getRESTUser(req.params.id).catch(
-      /** @param {import('eris').DiscordRESTError | import('eris').DiscordHTTPError} e */
-      (e) => {
-        if (e.code === 404 || e.code === 10013) {
-          res.status(400).send("<pre>400 Bad Request</pre>");
-        } else {
-          process.emit("unhandledRejection", e);
-          res.status(500).send(`<pre>500 Server Error: ${e}</pre>`);
-        }
-        return null;
-      });
-    if (! user) return;
-    res.set("Cache-Control", "max-age=3600").redirect(user.avatarURL);
+  if (!viewAll) {
+    q.where("isPrivate", 0);
+    q.where("status", constants.THREAD_STATUS.CLOSED);
+  } else {
+    if (privacy === "private") q.where("isPrivate", 1);
+    if (privacy === "public") q.where("isPrivate", 0);
+    if (status === "open") q.where("status", constants.THREAD_STATUS.OPEN);
+    else if (status === "closed") q.where("status", constants.THREAD_STATUS.CLOSED);
+  };
+
+  if (user) {
+    q.where("user_id", user);
+  } else {
+    q.select("*");
+  };
+
+  let total = (await q.clone().count())[0]["count(*)"];
+  let offset = page * limit;
+
+  if (sort_by) {
+    q.orderBy(sort_by, reverse ? "asc" : "desc");
+  };
+
+  q.orderBy("created_At", "desc");
+
+  res.json({
+    total: total,
+    includePrivate: viewAll,
+    threads: await q.limit(limit).offset(offset)
   });
+});
 
-  server.use(oauth2.checkAuth);
+server.get("/threads/:id", async (req, res) => {
+  let thread = await knex("threads").where("id", req.params.id).first();
+  if (! thread)
+    return notfound(res);
 
-  server.use(express.static(path.join(__dirname, '../dashboard/dist/')));
-
-  server.use((req, res, next) => {
-    res.set("Access-Control-Allow-Origin", "*");
-    res.flush = () => undefined;
-    next();
-  });
-
-  server.get("/threads", async (req, res) => {
-    let { limit: lim, page, user, sort_by, reverse, privacy, status } = req.query;
-    let limit = parseInt(lim) || 50;
-
-    if (limit < 1) limit = 1;
-    if (limit > 100) limit = 100;
-
-    page = parseInt(page) || 0;
-    reverse = reverse != null;
-    
-    let q = knex("threads");
-
-    // Send necessary threads only
+  if (thread.isPrivate) {
     const viewAll = await viewPrivateThreads(req);
 
-    if (!viewAll) {
-      q.where("isPrivate", 0);
-      q.where("status", constants.THREAD_STATUS.CLOSED);
-    } else {
-      if (privacy === "private") q.where("isPrivate", 1);
-      if (privacy === "public") q.where("isPrivate", 0);
-      if (status === "open") q.where("status", constants.THREAD_STATUS.OPEN);
-      else if (status === "closed") q.where("status", constants.THREAD_STATUS.CLOSED);
-    };
-
-    if (user) {
-      q.where("user_id", user);
-    } else {
-      q.select("*");
-    };
-
-    let total = (await q.clone().count())[0]["count(*)"];
-    let offset = page * limit;
-
-    if (sort_by) {
-      q.orderBy(sort_by, reverse ? "asc" : "desc");
-    };
-
-    q.orderBy("created_At", "desc");
-
-    res.json({
-      total: total,
-      includePrivate: viewAll,
-      threads: await q.limit(limit).offset(offset)
-    });
-  });
-
-  server.get("/threads/:id", async (req, res) => {
-    let thread = await knex("threads").where("id", req.params.id).first();
-    if (! thread)
-      return notfound(res);
-
-    if (thread.isPrivate) {
-      const viewAll = await viewPrivateThreads(req);
-
-      if (! viewAll) {
-        return privateThread(res);
-      }
+    if (! viewAll) {
+      return privateThread(res);
     }
+  }
 
-    res.json(thread);
-  });
+  res.json(thread);
+});
 
-  server.get("/users", async (req, res) => {
-    let users = await knex("threads").select("user_id", "user_name")
-      .groupBy("user_id").orderBy("created_at", "desc");
-    res.json(users.map(u => ({ id: u.user_id, name: u.user_name })));
-  });
+server.get("/users", async (req, res) => {
+  let users = await knex("threads").select("user_id", "user_name")
+    .groupBy("user_id").orderBy("created_at", "desc");
+  res.json(users.map(u => ({ id: u.user_id, name: u.user_name })));
+});
 
-  server.get("/logs/:id", async (req, res) => {
-    const threadId = req.params.id;
-    if (threadId.match(THREAD_ID) === null)
-      return notfound(res);
+server.get("/logs/:id", async (req, res) => {
+  const threadId = req.params.id;
+  if (threadId.match(THREAD_ID) === null)
+    return notfound(res);
 
-    const thread = await threads.findById(threadId);
-    if (! thread)
-      return notfound(res);
+  const thread = await threads.findById(threadId);
+  if (! thread)
+    return notfound(res);
 
-    if (thread.isPrivate) {
-      const viewAll = await viewPrivateThreads(req);
+  if (thread.isPrivate) {
+    const viewAll = await viewPrivateThreads(req);
 
-      if (! viewAll) {
-        return privateThread(res);
-      }
+    if (! viewAll) {
+      return privateThread(res);
     }
+  }
 
-    const logs = await thread.getThreadMessages();
+  const logs = await thread.getThreadMessages();
 
-    res.json(logs);
-  });
+  res.json(logs);
+});
 
-  server.get("/stream", sse.init);
+server.get("/stream", sse.init);
 
-  // Client-side routes from the dashboard's Vue router; serve the app so it can handle them
-  server.get(["/thread/:id", "/settings/:category"], (req, res) => {
-    res.sendFile(path.join(__dirname, '../dashboard/dist/index.html'));
-  });
+// Client-side routes from the dashboard's Vue router; serve the app so it can handle them
+server.get(["/thread/:id", "/settings/:category"], (req, res) => {
+  res.sendFile(path.join(__dirname, '../dashboard/dist/index.html'));
+});
 
-  server.on("error", err => {
-    console.log("[WARN] Web server error:", err.message);
-  });
+server.on("error", err => {
+  console.log("[WARN] Web server error:", err.message);
+});
+
+server.listen(config.port, config.host);
+
+module.exports = (mmbot) => {
+  bot = mmbot;
   return server;
 };
