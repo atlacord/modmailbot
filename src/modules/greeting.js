@@ -1,7 +1,7 @@
 const path = require("path");
 const fs = require("fs");
 const config = require("../cfg");
-const utils = require("../utils");
+const utils = require("../utils/utils");
 
 module.exports = ({ bot }) => {
   if (! config.enableGreeting) return;

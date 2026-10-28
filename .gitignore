@@ -4,6 +4,7 @@
 /welcome.png
 /update.sh
 .env
+src/dashboard
 
 # Config files
 *.config.ini

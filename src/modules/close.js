@@ -1,6 +1,6 @@
 const moment = require("moment");
 const Eris = require("eris");
-const utils = require("../utils");
+const utils = require("../utils/utils");
 const threads = require("../data/threads");
 const blocked = require("../data/blocked");
 const { messageQueue } = require("../queue");

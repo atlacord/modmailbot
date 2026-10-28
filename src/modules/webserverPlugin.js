@@ -1,7 +1,9 @@
-const utils = require('../utils');
+const utils = require('../utils/utils');
+const SSE = require("express-sse");
 
 module.exports = ({ config, bot, commands }) => {
-  const server = require("./webserver")(bot);
+  const sse = new SSE();
+  const server = require("./webserver")(bot, sse);
   server.listen(config.port, config.host);
 
   commands.addInboxServerCommand("privacy_policy_link", "", async (msg, args, thread) => {

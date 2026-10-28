@@ -1,7 +1,7 @@
 const path = require("path");
 const fs = require("fs");
 const {promisify} = require("util");
-const utils = require("../utils");
+const utils = require("../utils/utils");
 const updates = require("../data/updates");
 const { getPrettyVersion } = require("../botVersion");
 

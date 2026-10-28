@@ -3,7 +3,7 @@ const Eris = require("eris");
 
 const bot = require("../bot");
 const knex = require("../knex");
-const utils = require("../utils");
+const utils = require("../utils/utils");
 const config = require("../cfg");
 const attachments = require("./attachments");
 const { formatters } = require("../formatters");
@@ -20,7 +20,7 @@ const ThreadMessage = require("./ThreadMessage");
 
 const {THREAD_MESSAGE_TYPE, THREAD_STATUS, DISCORD_MESSAGE_ACTIVITY_TYPES} = require("./constants");
 const {isBlocked} = require("./blocked");
-const {messageContentToAdvancedMessageContent} = require("../utils");
+const {messageContentToAdvancedMessageContent} = require("../utils/utils");
 
 const escapeFormattingRegex = new RegExp("[_`~*|]", "g");
 

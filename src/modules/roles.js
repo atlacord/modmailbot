@@ -1,4 +1,4 @@
-const utils = require("../utils");
+const utils = require("../utils/utils");
 const {
   setModeratorDefaultRoleOverride,
   resetModeratorDefaultRoleOverride,
@@ -9,7 +9,7 @@ const {
   getModeratorThreadDisplayRoleName,
   getModeratorDefaultDisplayRoleName,
 } = require("../data/displayRoles");
-const {getOrFetchChannel} = require("../utils");
+const {getOrFetchChannel} = require("../utils/utils");
 
 module.exports = ({ bot, knex, config, commands }) => {
   if (! config.allowChangingDisplayRole) {

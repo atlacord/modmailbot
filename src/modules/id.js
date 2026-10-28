@@ -1,5 +1,5 @@
 const ThreadMessage = require("../data/ThreadMessage");
-const utils = require("../utils");
+const utils = require("../utils/utils");
 
 module.exports = ({ bot, knex, config, commands }) => {
   commands.addInboxThreadCommand("id", [], async (msg, args, thread) => {

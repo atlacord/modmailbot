@@ -1,4 +1,4 @@
-const utils = require("../utils");
+const utils = require("../utils/utils");
 
 module.exports = ({ bot, knex, config, commands }) => {
   commands.addInboxServerCommand("banmessage", [], async (msg, args, thread) => {

@@ -1,6 +1,6 @@
 const Thread = require("./Thread");
 const ThreadMessage = require("./ThreadMessage");
-const utils = require("../utils");
+const utils = require("../utils/utils");
 const config = require("../cfg");
 const { THREAD_STATUS } = require("./constants");
 const path = require("path");

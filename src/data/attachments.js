@@ -4,11 +4,11 @@ const https = require("https");
 const {promisify} = require("util");
 const tmp = require("tmp");
 const config = require("../cfg");
-const utils = require("../utils");
+const utils = require("../utils/utils");
 const mv = promisify(require("mv"));
 const path = require("path");
 
-const getUtils = () => require("../utils");
+const getUtils = () => require("../utils/utils");
 
 const access = promisify(fs.access);
 const readFile = promisify(fs.readFile);

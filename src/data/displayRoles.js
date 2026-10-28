@@ -1,6 +1,6 @@
 const knex = require("../knex");
 const Eris = require("eris");
-const utils = require("../utils");
+const utils = require("../utils/utils");
 const config = require("../cfg");
 
 /**

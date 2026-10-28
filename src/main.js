@@ -5,7 +5,10 @@ const config = require("./cfg");
 const bot = require("./bot");
 const knex = require("./knex");
 const { messageQueue } = require("./queue");
-const utils = require("./utils");
+
+const Queue = require('./utils/queue');
+const utils = require("./utils/utils");
+
 const { formatters } = require("./formatters")
 const { createCommandManager } = require("./commands");
 const { getPluginAPI, installPlugins, loadPlugins } = require("./plugins");
@@ -16,7 +19,7 @@ const threads = require("./data/threads");
 const updates = require("./data/updates");
 
 const { ACCIDENTAL_THREAD_MESSAGES } = require("./data/constants");
-const {getOrFetchChannel} = require("./utils");
+const {getOrFetchChannel} = require("./utils/utils");
 
 module.exports = {
   async start() {

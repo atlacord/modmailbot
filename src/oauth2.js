@@ -1,6 +1,6 @@
 const superagent = require("superagent");
 const jwt = require("jsonwebtoken");
-const config = require("./config");
+const config = require("./cfg");
 const bot = require("./bot");
 const utils = require("./utils/utils");
 
@@ -8,7 +8,7 @@ function login (req, res) {
   utils.getSelfUrl(config.redirectPath.slice(1)).then(redirectUri => {
     let code = req.query.code;
     const oauth2url = `https://discord.com/oauth2/authorize?client_id=${config.clientId}`
-      + `&scope=identify&response_type=code&redirect_uri=${encodeURIComponent(redirectUri)}`;
+      + `&scope=identify&response_type=code&redirect_uri=${encodeURIComponent(redirectUri)}&scope=identify`;
     if (! code)
       return res.redirect(oauth2url);
     superagent.post("https://discord.com/api/oauth2/token")
@@ -37,7 +37,7 @@ function login (req, res) {
 
 function isDashAdmin (user) {
   try {
-    const guild = bot.guilds.get(config.mainGuildId);
+    const guild = bot.guilds.get(config.mainGuildId[0]);
     const member = guild.members.get(user.id);
     return utils.isAdmin(member);
   } catch (err) {
@@ -65,14 +65,14 @@ async function checkAuth (req, res, next) {
   if (req.cookies.token) {
     req.user = await getAuthUser(req.cookies.token);
 
-    if (! req.user) {
+    if (!req.user) {
       return res.redirect("/login");
     } else {
       const guild = bot.guilds.get(config.mailGuildId);
-      const member = guild && guild.members.get(req.user.id);
+      const member = guild.members.get(req.user.id);
 
       if (member) {
-        let isAuthorized;
+        let isAuthorized = false;
 
         if (config.dashAuthRoles)
           isAuthorized = member.roles.some(r => config.dashAuthRoles.includes(r));
@@ -82,10 +82,10 @@ async function checkAuth (req, res, next) {
         if (isAuthorized) {
           return next();
         }
+      } else {
+        res.status(401);
+        res.send("<pre>401 Unauthorized</pre>");
       }
-
-      res.status(401);
-      res.send("<pre>401 Unauthorized</pre>");
     }
   } else {
     res.redirect("/login");

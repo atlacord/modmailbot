@@ -1,9 +1,9 @@
 const moment = require("moment");
-const utils = require("../utils");
+const utils = require("../utils/utils");
 const {findNotesByUserId, createUserNote, findNote, deleteNote} = require("../data/notes");
 const {START_CODEBLOCK, escapeMarkdown, END_CODEBLOCK, chunkMessageLines,
   postError
-} = require("../utils");
+} = require("../utils/utils");
 
 module.exports = ({ bot, knex, config, commands }) => {
   if (! config.allowNotes) return;

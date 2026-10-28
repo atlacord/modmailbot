@@ -1,6 +1,6 @@
 const Eris = require("eris");
 const threads = require("../data/threads");
-const utils = require("../utils");
+const utils = require("../utils/utils");
 const { Routes } = require("discord-api-types/v10");
 
 module.exports = ({ bot, knex, config, commands }) => {

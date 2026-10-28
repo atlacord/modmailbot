@@ -1,7 +1,7 @@
 const { CommandManager, defaultParameterTypes, TypeConversionError, IParameter, ICommandConfig } = require("knub-command-manager");
 const Eris = require("eris");
 const config = require("./cfg");
-const utils = require("./utils");
+const utils = require("./utils/utils");
 const threads = require("./data/threads");
 const Thread = require("./data/Thread");
 

@@ -1,9 +1,9 @@
 const threads = require("../data/threads");
 const moment = require("moment");
-const utils = require("../utils");
+const utils = require("../utils/utils");
 const { getLogUrl, getLogFile, getLogCustomResponse, saveLogToStorage } = require("../data/logs");
 const { THREAD_STATUS } = require("../data/constants");
-const {getOrFetchChannel} = require("../utils");
+const {getOrFetchChannel} = require("../utils/utils");
 
 const LOG_LINES_PER_PAGE = 10;
 

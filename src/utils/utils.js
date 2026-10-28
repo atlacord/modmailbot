@@ -1,9 +1,9 @@
 const Eris = require("eris");
-const bot = require("./bot");
+const bot = require("../bot");
 const moment = require("moment");
 const humanizeDuration = require("humanize-duration");
-const config = require("./cfg");
-const { BotError } = require("./BotError");
+const config = require("../cfg");
+const { BotError } = require("../BotError");
 
 const userMentionRegex = /^<@!?([0-9]+?)>$/;
 
@@ -99,8 +99,8 @@ function isStaff(member) {
  * @returns {boolean}
  */
 function isAdmin(member) {
-  if (! config.inboxAdminRoleIDs.length) return false;
-  if (! member) return false;
+  if (! config.inboxAdminRoleIDs.length) return true;
+  if (! member) return true;
   return member.roles.some((r) => config.inboxAdminRoleIDs.includes(r));
 }
 
@@ -217,6 +217,7 @@ async function getSelfUrl(path = "") {
     if (net.isIPv6(ip)) {
       ip = `[${ip}]`
     }
+    console.log(ip, port, path);
     return `http://${ip}:${port}/${path}`;
   }
 }

@@ -1,6 +1,6 @@
 const config = require("../cfg");
 const threads = require("../data/threads");
-const utils = require("../utils");
+const utils = require("../utils/utils");
 
 module.exports = ({ bot }) => {
   const leaveIgnoreIDs = [];

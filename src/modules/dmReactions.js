@@ -1,7 +1,7 @@
 const Eris = require("eris");
 const threads = require("../data/threads");
 const { THREAD_MESSAGE_TYPE } = require("../data/constants");
-const { getOrFetchChannel } = require("../utils");
+const { getOrFetchChannel } = require("../utils/utils");
 const util = require("util");
 
 module.exports = ({ bot, knex, config, commands }) => {

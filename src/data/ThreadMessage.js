@@ -1,4 +1,4 @@
-const utils = require("../utils");
+const utils = require("../utils/utils");
 const {THREAD_MESSAGE_TYPE} = require("./constants");
 
 /**

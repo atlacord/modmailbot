@@ -1,9 +1,9 @@
 const moment = require("moment");
 const threads = require("../data/threads");
-const utils = require("../utils");
+const utils = require("../utils/utils");
 
 const {THREAD_STATUS} = require("../data/constants");
-const {getOrFetchChannel} = require("../utils");
+const {getOrFetchChannel} = require("../utils/utils");
 
 module.exports = ({ bot, knex, config, commands }) => {
   if (! config.allowSuspend) return;

@@ -1,6 +1,6 @@
 const threads = require("../data/threads");
 const snippets = require("../data/snippets");
-const utils = require("../utils");
+const utils = require("../utils/utils");
 const { parseArguments } = require("knub-command-manager");
 
 const whitespaceRegex = /\s/;

@@ -1,6 +1,6 @@
-const utils = require("../utils");
+const utils = require("../utils/utils");
 const threads = require("../data/threads");
-const {getOrFetchChannel} = require("../utils");
+const {getOrFetchChannel} = require("../utils/utils");
 
 module.exports = ({ bot, knex, config, commands }) => {
   commands.addInboxServerCommand("newthread", "<userId:userId>", async (msg, args, thread) => {

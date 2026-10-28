@@ -1,5 +1,5 @@
 const attachments = require("../data/attachments");
-const utils = require("../utils");
+const utils = require("../utils/utils");
 const Thread = require("../data/Thread");
 
 module.exports = ({ bot, knex, config, commands }) => {

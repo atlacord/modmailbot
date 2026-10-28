@@ -1,7 +1,9 @@
 const express = require("express");
+const SSE = require("express-sse");
 const helmet = require("helmet");
 const mime = require("mime");
 const url = require("url");
+const knex = require("../knex");
 const fs = require("fs");
 const jwt = require("jsonwebtoken");
 const qs = require("querystring");
@@ -13,11 +15,16 @@ const threads = require("../data/threads");
 const attachments = require("../data/attachments");
 const { formatters } = require("../formatters");
 const { summariseEmbedsAsText } = require("../embedLogging");
+const cookieParser = require('cookie-parser');
 const marked = require("marked");
+const constants = require("../utils/constants");
+const utils = require("../utils/utils");
+
+const THREAD_ID = /^[0-9a-f-]+$/;
+const ID = /^\d+$/;
 
 const API_ENDPOINT = "https://discord.com/api/v9";
-
-let bot;
+var bot;
 
 function notfound(res) {
   res.status(404).send("Page Not Found");
@@ -85,47 +92,17 @@ function serveAttachments(req, res) {
   })
 };
 
-const mdPrivacyPolicyPath = path.resolve(__dirname, "../../PRIVACY_POLICY.md");
-let htmlPrivacyPolicy = null;
-if (fs.existsSync(mdPrivacyPolicyPath)) {
-  const mdPrivacyPolicy = fs.readFileSync(mdPrivacyPolicyPath, { encoding: "utf8" });
-  const parsedPrivacyPolicy = marked.parse(mdPrivacyPolicy);
-  htmlPrivacyPolicy = `
-    <html>
-    <head>
-      <meta charset="UTF-8">
-      <meta name="viewport" content="width=device-width, initial-scale=1.0">
-      <title>Privacy policy</title>
-      <style>
-        html {
-          font: normal 16px/1.4 system-ui, sans-serif;
-        }
-        body {
-          width: 100%;
-          max-width: 900px;
-          margin: 32px auto;
-          padding: 0 16px;
-        }
-      </style>
-    </head>
-    <body>${parsedPrivacyPolicy}</body>
-    </html>
-  `;
-}
-
 function decodeJwt(token) {
   return jwt.decode(token, config.jwtSecret);
 };
 
-async function createThread(req, res) {
+async function createThread(bot, req, res) {
   console.log("This should be running");
   res.set("Content-Security-Policy", "script-src 'nonce-hawky'")
 
   if (req.query.t !== undefined) {
     const meta = decodeJwt(req.query.t);
   };
-
-  console.log(req.body);
 
   const payload = {
     token: req.query.t || undefined
@@ -153,40 +130,143 @@ async function createThread(req, res) {
   res.status(400);
 };
 
-const server = express();
-server.use(helmet());
+/**
+ * 
+ * @param {*} bot 
+ * @param {SSE} sse 
+ */
+module.exports = (mmbot, sse) => {
+  bot = mmbot;
+  const server = express();
+  server.use(cookieParser());
+  server.use(helmet());
 
-if (config.dashAuthRoles || config.dashAuthUsers) {
   server.get(config.redirectPath, oauth2.login);
   server.use(oauth2.checkAuth);
-}
 
-server.use(express.static(path.join(__dirname, '../dashboard/')));
-
-server.get("/logs/:threadId", serveLogs);
-server.get("/attachments/:attachmentId/:filename", serveAttachments);
-server.get("/threads/create", createThread);
-if (htmlPrivacyPolicy) {
-  server.get("/privacy-policy", (req, res) => {
-    res.set("Content-Type", "text/html; charset=utf8");
-    res.send(htmlPrivacyPolicy);
-  });
-};
-
-server.get('*', (req, res, next) => {
-  const dashboardPath = path.join(__dirname, '../dashboard/dist/index.html');
-  if (fs.existsSync(dashboardPath)) {
-    res.sendFile(dashboardPath);
-  } else {
+  server.use(express.static(path.join(__dirname, '../dashboard/dist/')));
+  server.use((req, res, next) => {
+    res.set("Access-Control-Allow-Origin", "*");
     next();
-  }
-});
+  });
 
-server.on("error", err => {
-  console.log("[WARN] Web server error:", err.message);
-});
+  server.use((req, res, next) => {
+    res.flush = () => undefined;
+    next();
+  });
 
-module.exports = (mmbot) => {
-  bot = mmbot;
+  server.get("/threads", async (req, res) => {
+    let { limit: lim, page, user, sort_by, reverse, privacy, status } = req.query;
+    let limit = parseInt(lim) || 50;
+
+    if (limit < 1) limit = 1;
+    if (limit > 100) limit = 100;
+
+    page = parseInt(page) || 0;
+    reverse = reverse != null;
+    
+    let q = knex("threads");
+
+    // Send necessary threads only
+    const viewAll = await viewPrivateThreads(req);
+
+    if (!viewAll) {
+      q.where("isPrivate", 0);
+      q.where("status", constants.THREAD_STATUS.CLOSED);
+    } else {
+      if (privacy === "private") q.where("isPrivate", 1);
+      if (privacy === "public") q.where("isPrivate", 0);
+      if (status === "open") q.where("status", constants.THREAD_STATUS.OPEN);
+      else if (status === "closed") q.where("status", constants.THREAD_STATUS.CLOSED);
+    };
+
+    if (user) {
+      q.where("user_id", user);
+    } else {
+      q.select("*");
+    };
+
+    let total = (await q.clone().count())[0]["count(*)"];
+    let offset = page * limit;
+
+    if (sort_by) {
+      q.orderBy(sort_by, reverse ? "asc" : "desc");
+    };
+
+    q.orderBy("created_At", "desc");
+
+    res.json({
+      total: total,
+      includePrivate: viewAll,
+      threads: await q.limit(limit).offset(offset)
+    });
+  });
+
+  server.get("/threads/:id", async (req, res) => {
+    let thread = await knex("threads").where("id", req.params.id).first();
+    if (! thread)
+      return notfound(res);
+
+    if (thread.isPrivate) {
+      const viewAll = await viewPrivateThreads(req);
+
+      if (! viewAll) {
+        return privateThread(res);
+      }
+    }
+
+    res.json(thread);
+  });
+
+  server.get("/users", async (req, res) => {
+    let users = await knex("threads").select("user_id", "user_name")
+      .groupBy("user_id").orderBy("created_at", "desc");
+    res.json(users.map(u => ({ id: u.user_id, name: u.user_name })));
+  });
+
+  server.get("/logs/:id", async (req, res) => {
+    const threadId = req.params.id;
+    if (threadId.match(THREAD_ID) === null)
+      return notfound(res);
+
+    const thread = await threads.findById(threadId);
+    if (! thread)
+      return notfound(res);
+
+    if (thread.isPrivate) {
+      const viewAll = await viewPrivateThreads(req);
+
+      if (! viewAll) {
+        return privateThread(res);
+      }
+    }
+
+    const logs = await thread.getThreadMessages();
+
+    res.json(logs);
+  });
+
+  server.get("/avatars/:id", async (req, res) => {
+    const user = bot.users.get(req.params.id) || await bot.getRESTUser(req.params.id).catch(
+      /** @param {import('eris').DiscordRESTError | import('eris').DiscordHTTPError} e */
+      (e) => {
+        if (e.code === 404 || e.code === 10013) {
+          res.status(400).send("<pre>400 Bad Request</pre>");
+        } else {
+          process.emit("unhandledRejection", e);
+          res.status(500).send(`<pre>500 Server Error: ${e}</pre>`);
+        }
+        return null;
+      });
+    if (! user) return;
+
+    res.set("Cache-Control", "max-age=3600").redirect(user.avatarURL);
+  });
+
+  server.get("/stream", sse.init);
+
+  server.on("error", err => {
+    console.log("[WARN] Web server error:", err.message);
+  });
   return server;
 };

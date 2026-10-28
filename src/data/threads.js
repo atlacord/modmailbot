@@ -9,7 +9,7 @@ const crypto = require("crypto");
 const bot = require("../bot");
 const knex = require("../knex");
 const config = require("../cfg");
-const utils = require("../utils");
+const utils = require("../utils/utils");
 const updates = require("./updates");
 
 const Thread = require("./Thread");

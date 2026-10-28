@@ -1,5 +1,5 @@
 const Eris = require("eris");
-const utils = require("./utils");
+const utils = require("./utils/utils");
 const config = require("./cfg");
 const ThreadMessage = require("./data/ThreadMessage");
 const {THREAD_MESSAGE_TYPE} = require("./data/constants");
