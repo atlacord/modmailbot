@@ -273,8 +273,6 @@ server.on("error", err => {
   console.log("[WARN] Web server error:", err.message);
 });
 
-server.listen(config.port, config.host);
-
 module.exports = (mmbot, _sse) => {
   bot = mmbot;
   sse = _sse;
