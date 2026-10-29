@@ -37,6 +37,12 @@ function login (req, res) {
   });
 }
 
+function logout (req, res) {
+  authCache.delete(req.cookies.token);
+  res.clearCookie("token");
+  res.redirect(config.redirectPath);
+}
+
 function isDashAdmin (user) {
   try {
     const guild = bot.guilds.get(config.mainGuildId[0]);
@@ -99,6 +105,7 @@ async function checkAuth (req, res, next) {
 
 module.exports = {
   login,
+  logout,
   isDashAdmin,
   getAuthUser,
   checkAuth,

@@ -145,6 +145,8 @@ server.use(helmet.contentSecurityPolicy({
 server.use(cors());
 
 server.get(config.redirectPath, oauth2.login);
+// Before checkAuth so an expired token can still log out
+server.get("/logout", oauth2.logout);
 server.use(oauth2.checkAuth);
 
 server.use(express.static(path.join(__dirname, '../dashboard/dist/')));
@@ -219,6 +221,12 @@ server.get("/threads/:id", async (req, res) => {
   }
 
   res.json(thread);
+});
+
+// The logged in dashboard user, set by checkAuth
+server.get("/me", (req, res) => {
+  const { id, username, global_name } = req.user;
+  res.json({ id, username, globalName: global_name });
 });
 
 server.get("/users", async (req, res) => {
