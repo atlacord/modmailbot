@@ -218,7 +218,7 @@ async function getSelfUrl(path = "") {
       ip = `[${ip}]`
     }
     console.log(ip, port, path);
-    return `http://${ip}:${port}/${path}`;
+    return `<http://${ip}:${port}/${path}>`;
   }
 }
 
