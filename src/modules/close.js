@@ -53,7 +53,7 @@ module.exports = ({ bot, knex, config, commands }) => {
     if (logUrl) {
       utils.postLog(utils.trimAll(`
           ${body}
-          Logs: ${logUrl}
+          Logs: <${logUrl}>
         `));
       return;
     }

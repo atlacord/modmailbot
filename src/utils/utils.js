@@ -210,7 +210,7 @@ async function getSelfIp() {
  */
 async function getSelfUrl(path) {
   if (config.url) {
-    return `<${config.url}/${path}>`;
+    return `${config.url}/${path}`;
   } else {
     const port = config.port || 8890;
     let ip = await getSelfIp();
