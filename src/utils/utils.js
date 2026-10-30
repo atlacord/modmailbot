@@ -208,17 +208,16 @@ async function getSelfIp() {
  * @param {String} path
  * @returns {Promise<String>}
  */
-async function getSelfUrl(path = "") {
+async function getSelfUrl(path) {
   if (config.url) {
-    return `${config.url}/${path}`;
+    return `<${config.url}/${path}>`;
   } else {
     const port = config.port || 8890;
     let ip = await getSelfIp();
     if (net.isIPv6(ip)) {
       ip = `[${ip}]`
     }
-    console.log(ip, port, path);
-    return `<http://${ip}:${port}/${path}>`;
+    return `http://${ip}:${port}/${path}`;
   }
 }
 
