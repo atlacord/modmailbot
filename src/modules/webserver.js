@@ -213,7 +213,7 @@ server.get(config.redirectPath, oauth2.login);
 server.get("/logout", oauth2.logout);
 server.use(oauth2.checkAuth);
 
-server.use(express.static(path.join(__dirname, '../../../dashboard/dist/')));
+server.use(express.static(path.join(__dirname, '../dashboard/dist/')));
 
 server.use((req, res, next) => {
   res.set("Access-Control-Allow-Origin", "*");
@@ -374,7 +374,7 @@ server.get("/stream", sse.init);
 
 // Client-side routes from the dashboard's Vue router; serve the app so it can handle them
 server.get(["/thread/:id", "/settings/:category"], (req, res) => {
-  res.sendFile(path.join(__dirname, '../../../dashboard/dist/index.html'));
+  res.sendFile(path.join(__dirname, '../dashboard/dist/index.html'));
 });
 
 server.on("error", err => {
