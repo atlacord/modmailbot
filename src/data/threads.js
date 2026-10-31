@@ -235,9 +235,10 @@ async function createNewThreadForUser(user, opts = {}) {
       user_id: user.id,
       user_name: user.username,
       channel_id: createdChannel.id,
+      category: opts.isPrivate ? (config.adminCategoryId || null) : (config.categoryAutomation.newThread || null),
       next_message_number: 1,
       created_at: moment.utc().format("YYYY-MM-DD HH:mm:ss"),
-      isPrivate: opts.isPrivate ? 1 : 0
+      is_private: opts.isPrivate ? 1 : 0
     });
 
     const newThread = await findById(newThreadId);
@@ -350,9 +351,10 @@ async function moveThread(thread, targetCategory, mentionRole) {
   threadChannel.edit({
     parentID: targetCategory.id
   }).then(() => {
+    thread.setCategory(targetCategory.id);
 
     // Make thread private/unprivate
-    if (targetCategory.id !== config.categoryAutomation.newThread && targetCategory.id !== config.communityThreadCategoryId) {
+    if (targetCategory.id !== config.categoryAutomation.newThread && targetCategory.id !== config.communityCategoryId) {
       thread.makePrivate();
 
       if (mentionRole) {
