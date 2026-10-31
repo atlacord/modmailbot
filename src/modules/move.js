@@ -38,7 +38,7 @@ module.exports = ({ bot, knex, config, commands }) => {
     }
 
     try {
-      if(targetCategory.id === config.communityThreadCategoryId || targetCategory.id === config.categoryAutomation.newThread) {
+      if(targetCategory.id === config.communityCategoryId || targetCategory.id === config.categoryAutomation.newThread) {
         threads.moveThread(thread, targetCategory, false);
       } else {
         threads.moveThread(thread, targetCategory, true);

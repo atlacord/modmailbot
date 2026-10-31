@@ -26,10 +26,20 @@ const THREAD_ID = /^[0-9a-f-]+$/;
 const ID = /^\d+$/;
 
 const API_ENDPOINT = "https://discord.com/api/v9";
+
+const THREAD_CATEGORIES = {
+  moderator: config.categoryAutomation.newThread,
+  community: config.communityCategoryId,
+  admin: config.adminCategoryId
+};
 var sse;
 
 function notfound(res) {
   res.status(404).send("Page Not Found");
+}
+
+function privateThread(res) {
+  res.status(403).send("<pre>403 Forbidden</pre>");
 }
 
 /**
@@ -73,6 +83,60 @@ async function serveLogs(req, res) {
 async function viewPrivateThreads(req) {
   const user = await oauth2.getAuthUser(req.cookies.token);
   return oauth2.isDashAdmin(user);
+}
+
+/**
+ * @param {express.Request} req
+ */
+async function viewCommunityOnly(req) {
+  const user = await oauth2.getAuthUser(req.cookies.token);
+  return oauth2.isDashCommunityOnly(user);
+};
+
+async function viewModeratorOnly(req) {
+  const user = await oauth2.getAuthUser(req.cookies.token);
+  return oauth2.isDashModerator(user);
+};
+
+/**
+ * @param {express.Request} req
+ */
+async function hideCommunityThreads(req) {
+  const user = await oauth2.getAuthUser(req.cookies.token);
+  return oauth2.isDashModerator(user);
+}
+
+/**
+ * Excludes community threads from the query, keeping threads without a category
+ * @param {import("knex").Knex.QueryBuilder} q
+ */
+function excludeCommunityThreads(q) {
+  if (!config.communityCategoryId) return;
+  q.where(qb => qb.whereNull("category").orWhereNot("category", config.communityCategoryId));
+}
+
+async function hideModeratorThreads(req) {
+  const user = await oauth2.getAuthUser(req.cookies.token);
+  return oauth2.isDashCommunityOnly(user);
+}
+
+function excludeModeratorThreads(q) {
+  if (!config.categoryAutomation.newThread) return;
+  q.where(qb => qb.whereNull("category").orWhereNot("category", config.categoryAutomation.newThread));
+};
+
+/**
+ * Returns whether the requesting user may view the given thread
+ * @param {express.Request} req
+ */
+async function canViewThread(req, thread) {
+  if (await viewCommunityOnly(req)) {
+    return ! thread.is_private && thread.category === config.communityCategoryId;
+  }
+  if (thread.category === config.communityCategoryId && await hideCommunityThreads(req)) {
+    return false;
+  }
+  return ! thread.is_private || await viewPrivateThreads(req);
 }
 
 function serveAttachments(req, res) {
@@ -149,7 +213,7 @@ server.get(config.redirectPath, oauth2.login);
 server.get("/logout", oauth2.logout);
 server.use(oauth2.checkAuth);
 
-server.use(express.static(path.join(__dirname, '../dashboard/dist/')));
+server.use(express.static(path.join(__dirname, '../../../dashboard/dist/')));
 
 server.use((req, res, next) => {
   res.set("Access-Control-Allow-Origin", "*");
@@ -158,7 +222,7 @@ server.use((req, res, next) => {
 });
 
 server.get("/threads", async (req, res) => {
-  let { limit: lim, page, user, sort_by, reverse, privacy, status } = req.query;
+  let { limit: lim, page, user, sort_by, reverse, privacy, status, category } = req.query;
   let limit = parseInt(lim) || 50;
 
   if (limit < 1) limit = 1;
@@ -171,18 +235,43 @@ server.get("/threads", async (req, res) => {
 
   // Send necessary threads only
   const viewAll = await viewPrivateThreads(req);
+  const communityOnly = await viewCommunityOnly(req);
+  const moderatorOnly = await viewModeratorOnly(req);
+  const hideCommunity = await hideCommunityThreads(req);
+  const hideModerator = await hideModeratorThreads(req);
 
-  if (!viewAll) {
-    q.where("isPrivate", 0);
+  if (moderatorOnly) {
+    q.where("is_private", 0).where("category", config.categoryAutomation.newThread || null);
+  } else if (!viewAll) {
+    q.where("is_private", 0);
   } else {
-    if (privacy === "private") q.where("isPrivate", 1);
-    if (privacy === "public") q.where("isPrivate", 0);
+    if (privacy === "private") q.where("is_private", 1);
+    if (privacy === "public") q.where("is_private", 0);
   };
+
+  if (hideModerator) excludeModeratorThreads(q);
+
+  if (communityOnly) {
+    q.where("is_private", 0).where("category", config.communityCategoryId || null);
+  } else if (!viewAll) {
+    q.where("is_private", 0);
+  } else {
+    if (privacy === "private") q.where("is_private", 1);
+    if (privacy === "public") q.where("is_private", 0);
+  };
+
+  if (hideCommunity) excludeCommunityThreads(q);
+  if (hideModerator) excludeModeratorThreads(q);
     
   if (status === "open") {
     q.where("status", constants.THREAD_STATUS.OPEN);
   } else if (status === "closed") {
     q.where("status", constants.THREAD_STATUS.CLOSED);
+  };
+
+  // Only admins may filter by the admin category
+  if (!communityOnly && !moderatorOnly && THREAD_CATEGORIES[category] && (category !== "admin" || viewAll)) {
+    q.where("category", THREAD_CATEGORIES[category]);
   };
 
   if (user) {
@@ -203,6 +292,10 @@ server.get("/threads", async (req, res) => {
   res.json({
     total: total,
     includePrivate: viewAll,
+    communityOnly,
+    moderatorOnly,
+    hideCommunity,
+    hideModerator,
     threads: await q.limit(limit).offset(offset)
   });
 });
@@ -212,13 +305,8 @@ server.get("/threads/:id", async (req, res) => {
   if (! thread)
     return notfound(res);
 
-  if (thread.isPrivate) {
-    const viewAll = await viewPrivateThreads(req);
-
-    if (! viewAll) {
-      return privateThread(res);
-    }
-  }
+  if (! await canViewThread(req, thread))
+    return privateThread(res);
 
   res.json(thread);
 });
@@ -230,8 +318,17 @@ server.get("/me", (req, res) => {
 });
 
 server.get("/users", async (req, res) => {
-  let users = await knex("threads").select("user_id", "user_name")
-    .groupBy("user_id").orderBy("created_at", "desc");
+  let q = knex("threads").select("user_id", "user_name");
+  // Community-only users should only see users who have community threads
+  if (await viewCommunityOnly(req))
+    q.where("is_private", 0).where("category", config.communityCategoryId || null);
+  else if (await hideCommunityThreads(req))
+    excludeCommunityThreads(q);
+  if (await viewModeratorOnly(req))
+    q.where("is_private", 0).where("category", config.categoryAutomation.newThread || null);
+  else if (await hideModeratorThreads(req))
+    excludeModeratorThreads(q);
+  let users = await q.groupBy("user_id").orderBy("created_at", "desc");
   res.json(users.map(u => ({ id: u.user_id, name: u.user_name })));
 });
 
@@ -244,13 +341,8 @@ server.get("/logs/:id", async (req, res) => {
   if (! thread)
     return notfound(res);
 
-  if (thread.isPrivate) {
-    const viewAll = await viewPrivateThreads(req);
-
-    if (! viewAll) {
-      return privateThread(res);
-    }
-  }
+  if (! await canViewThread(req, thread))
+    return privateThread(res);
 
   const logs = await thread.getThreadMessages();
 
@@ -282,7 +374,7 @@ server.get("/stream", sse.init);
 
 // Client-side routes from the dashboard's Vue router; serve the app so it can handle them
 server.get(["/thread/:id", "/settings/:category"], (req, res) => {
-  res.sendFile(path.join(__dirname, '../dashboard/dist/index.html'));
+  res.sendFile(path.join(__dirname, '../../../dashboard/dist/index.html'));
 });
 
 server.on("error", err => {

@@ -22,7 +22,7 @@ module.exports = ({ bot, knex, config, commands, hooks }) => {
   };
 
   const logsCmd = async (msg, args, thread) => {
-    if (msg.channel.parentID === config.communityThreadCategoryId) return; // temporary until oauth access is added
+    if (msg.channel.parentID === config.communityCategoryId) return; // temporary until oauth access is added
 
     let userId = args.userId || (thread && thread.user_id);
     if (! userId) return;
@@ -32,7 +32,7 @@ module.exports = ({ bot, knex, config, commands, hooks }) => {
 
     // Command isn't being used in an admin channel or thread
     if (! [msg.channel.parentID, msg.channel.id].includes(config.adminChannelId)) {
-      userThreads = userThreads.filter((t) => ! t.isPrivate);
+      userThreads = userThreads.filter((t) => ! t.is_private);
     }
 
     // Descending by date
@@ -58,7 +58,7 @@ module.exports = ({ bot, knex, config, commands, hooks }) => {
         ? `<${addOptQueryStringToUrl(logUrl, args)}>`
         : `View log with \`${config.prefix}log ${userThread.thread_number}\``
       const formattedDate = moment.utc(userThread.created_at).format("MMM Do YYYY [at] HH:mm [UTC]");
-      const adminThread = userThread.isPrivate ? ' \`[Admin-Only]\`' : '';
+      const adminThread = userThread.is_private ? ' \`[Admin-Only]\`' : '';
       return `\`#${userThread.thread_number}\` \`${formattedDate}\`${adminThread}: ${formattedLogUrl}`;
     }));
 

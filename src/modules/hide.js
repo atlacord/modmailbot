@@ -23,7 +23,7 @@ module.exports = ({ bot, commands }) => {
     const suffix = msg.channel.id == thread.channel_id ? "this" : "that";
     const text = `Made ${suffix} thread`;
 
-    if (! thread.isPrivate) {
+    if (! thread.is_private) {
       thread.makePrivate();
       bot.createMessage(msg.channel.id, text + " private!");
     } else {
