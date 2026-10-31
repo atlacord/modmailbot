@@ -246,7 +246,7 @@ server.get("/threads", async (req, res) => {
     q.where("is_private", 0);
   } else {
     if (privacy === "private") q.where("is_private", 1);
-    if (privacy === "public") q.where("is_private", 0);
+    if (privacy === "moderator") q.where("is_private", 0);
   };
 
   if (hideModerator) excludeModeratorThreads(q);
@@ -257,7 +257,7 @@ server.get("/threads", async (req, res) => {
     q.where("is_private", 0);
   } else {
     if (privacy === "private") q.where("is_private", 1);
-    if (privacy === "public") q.where("is_private", 0);
+    if (privacy === "moderator") q.where("is_private", 0);
   };
 
   if (hideCommunity) excludeCommunityThreads(q);
