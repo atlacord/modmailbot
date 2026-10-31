@@ -121,6 +121,14 @@
       "$ref": "#/definitions/stringArray",
       "default": ["manageMessages"]
     },
+    "inboxCommunityRoleIDs": {
+      "$ref": "#/definitions/stringArray",
+      "default": []
+    },
+    "inboxModeratorRoleIDs": {
+      "$ref": "#/definitions/stringArray",
+      "default": []
+    },
     "alwaysReply": {
       "$ref": "#/definitions/customBoolean",
       "default": false

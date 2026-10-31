@@ -20,6 +20,8 @@
  * @property {boolean} [pingOnBotMention=true]
  * @property {string} [botMentionResponse]
  * @property {array} [inboxServerPermission=["manageMessages"]]
+ * @property {array} [inboxCommunityRoleIDs=[]]
+ * @property {array} [inboxModeratorRoleIDs=[]]
  * @property {boolean} [alwaysReply=false]
  * @property {boolean} [alwaysReplyAnon=false]
  * @property {boolean} [forceAnon=false]

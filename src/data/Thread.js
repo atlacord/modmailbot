@@ -30,12 +30,14 @@ const escapeFormattingRegex = new RegExp("[_`~*|]", "g");
  * @property {Number} status
  * @property {String} user_id
  * @property {String} user_name
+ * @property {String} category
  * @property {String} channel_id
  * @property {Number} next_message_number
  * @property {String} scheduled_close_at
  * @property {String} scheduled_close_id
  * @property {String} scheduled_close_name
  * @property {Number} scheduled_close_silent
+ * @property {Boolean} is_private
  * @property {String} alert_ids
  * @property {String} log_storage_type
  * @property {Object} log_storage_data
@@ -859,9 +861,9 @@ class Thread {
     // Delete channel
     const channel = bot.getChannel(this.channel_id);
     if (channel) {
-      if (this.isPrivate && (channel.parentID == config.categoryAutomation.newThread || channel.parentID == config.communityThreadCategoryId)) {
+      if (this.is_private && (channel.parentID == config.categoryAutomation.newThread || channel.parentID == config.communityThreadCategoryId)) {
         this.makePublic();
-      } else if (! this.isPrivate && (channel.parentID != config.categoryAutomation.newThread && channel.parentID != config.communityThreadCategoryId)) {
+      } else if (! this.is_private && (channel.parentID != config.categoryAutomation.newThread && channel.parentID != config.communityThreadCategoryId)) {
         this.makePrivate();
       }
       console.log(`Deleting channel ${this.channel_id}`);
@@ -966,7 +968,7 @@ class Thread {
       return await knex("threads")
         .where("id", this.id)
         .update({
-          isPrivate: true
+          is_private: true
         });
     }
   
@@ -977,9 +979,23 @@ class Thread {
       return await knex("threads")
         .where("id", this.id)
         .update({
-          isPrivate: false
+          is_private: false
         });
     }
+
+  /**
+   * @param {String} categoryId
+   * @returns {Promise<void>}
+   */
+  async setCategory(categoryId) {
+    await knex("threads")
+      .where("id", this.id)
+      .update({
+        category: categoryId
+      });
+
+    this.category = categoryId;
+  }
 
   /**
    * @param {String} userId
