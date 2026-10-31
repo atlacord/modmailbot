@@ -47,7 +47,35 @@ function isDashAdmin (user) {
   try {
     const guild = bot.guilds.get(config.mainGuildId[0]);
     const member = guild.members.get(user.id);
+    if (! member) return false;
     return utils.isAdmin(member);
+  } catch (err) {
+    return false;
+  }
+}
+
+// Users with a community role (and no admin role) can only view community threads
+function isDashCommunityOnly (user) {
+  try {
+    const guild = bot.guilds.get(config.mailGuildId);
+    const member = guild.members.get(user.id);
+    if (! member) return false;
+    if (isDashAdmin(user)) return false;
+    return member.roles.some(r => config.inboxCommunityRoleIDs.includes(r)) && !member.roles.some(r => config.inboxModeratorRoleIDs.includes(r));
+  } catch (err) {
+    return false;
+  }
+}
+
+// Users with a moderator role (and no admin or community role) can't view community threads
+function isDashModerator (user) {
+  try {
+    const guild = bot.guilds.get(config.mailGuildId);
+    const member = guild.members.get(user.id);
+    if (! member) return false;
+    if (isDashAdmin(user)) return false;
+    return member.roles.some(r => config.inboxModeratorRoleIDs.includes(r))
+      && ! member.roles.some(r => config.inboxCommunityRoleIDs.includes(r));
   } catch (err) {
     return false;
   }
@@ -89,6 +117,8 @@ async function checkAuth (req, res, next) {
           isAuthorized = member.roles.some(r => config.dashAuthRoles.includes(r));
         if (config.dashAuthUsers)
           isAuthorized = config.dashAuthUsers.includes(member.id);
+        if (member.roles.some(r => config.inboxCommunityRoleIDs.includes(r)))
+          isAuthorized = true;
 
         if (isAuthorized) {
           return next();
@@ -107,6 +137,8 @@ module.exports = {
   login,
   logout,
   isDashAdmin,
+  isDashCommunityOnly,
+  isDashModerator,
   getAuthUser,
   checkAuth,
 };
