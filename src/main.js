@@ -20,6 +20,7 @@ const updates = require("./data/updates");
 
 const { ACCIDENTAL_THREAD_MESSAGES } = require("./data/constants");
 const {getOrFetchChannel} = require("./utils/utils");
+const { getAppealCooldownRemaining, formatAppealCooldownMessage } = require("./utils/appealCooldown");
 
 module.exports = {
   async start() {
@@ -186,6 +187,13 @@ function initBaseMessageHandlers() {
       if (createNewThread) {
         // Ignore messages that shouldn't usually open new threads, such as "ok", "thanks", etc.
         if (config.ignoreAccidentalThreads && msg.content && ACCIDENTAL_THREAD_MESSAGES.includes(msg.content.trim().toLowerCase())) return;
+
+        // Users in the appeal server can't appeal until 24h after their main server ban
+        const appealCooldownRemaining = await getAppealCooldownRemaining(msg.author.id);
+        if (appealCooldownRemaining > 0) {
+          channel.createMessage(formatAppealCooldownMessage(appealCooldownRemaining)).catch(utils.noop);
+          return;
+        }
 
         thread = await threads.createNewThreadForUser(msg.author, {
           source: "dm",
