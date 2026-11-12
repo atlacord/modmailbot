@@ -199,6 +199,7 @@ if (!sse) {
 
 const server = express();
 server.use(cookieParser());
+server.use('/appeals', require('../appeals'))
 server.use(helmet.contentSecurityPolicy({
   useDefaults: true,
   directives: {
