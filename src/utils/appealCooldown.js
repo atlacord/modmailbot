@@ -4,7 +4,7 @@ const bot = require("../bot");
 const config = require("../cfg");
 
 const APPEAL_GUILD_ID = "736344840253472830";
-const APPEAL_COOLDOWN_MS = 24 * 60 * 60 * 1000;
+const APPEAL_COOLDOWN_MS = 367 * 60 * 1000; // 6 hours 7 minutes
 
 async function isMemberOf(guildId, userId) {
   const guild = bot.guilds.get(guildId);
