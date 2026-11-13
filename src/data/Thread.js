@@ -237,7 +237,7 @@ class Thread {
     // Handle replies
     if (config.relayInlineReplies && messageReference) {
       const repliedTo = await this.getThreadMessageForMessageId(messageReference.messageID);
-      if (repliedTo) {
+      if (repliedTo && repliedTo.dm_message_id) { // messages from the appeals site have no DM to reply to
         userMessageReference = {
           channelID: repliedTo.dm_channel_id,
           messageID: repliedTo.dm_message_id,
@@ -608,6 +608,30 @@ class Thread {
           users: ids,
         },
       });
+    }
+  }
+
+  /**
+   * Posts text from the user that didn't arrive as a DM (e.g. a form on the appeals site) as a regular user message
+   * @param {Eris.User} user
+   * @param {string} text
+   * @returns {Promise<void>}
+   */
+  async receiveUserText(user, text) {
+    let threadMessage = new ThreadMessage({
+      message_type: THREAD_MESSAGE_TYPE.FROM_USER,
+      user_id: this.user_id,
+      user_name: config.useDisplaynames ? user.globalName || user.username : user.username,
+      body: text,
+      is_anonymous: 0,
+    });
+
+    threadMessage = await this._addThreadMessageToDB(threadMessage.getSQLProps());
+
+    const inboxContent = messageContentToAdvancedMessageContent(await formatters.formatUserReplyThreadMessage(threadMessage));
+    const inboxMessage = await this._postToThreadChannel(inboxContent);
+    if (inboxMessage) {
+      await this._updateThreadMessage(threadMessage.id, { inbox_message_id: inboxMessage.id });
     }
   }
 
