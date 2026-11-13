@@ -4,7 +4,7 @@ module.exports = ({ bot, knex, config, commands }) => {
   commands.addInboxServerCommand("banmessage", [], async (msg, args, thread) => {
     let embed = {
       title: "Ban Appeals",
-      description: "The Earth King welcomes you to Lake Laogai. If you're here, it means that you were banned from the main ATLA server. \n Here are a few things to note:",
+      description: "The Earth King welcomes you to Lake Laogai. You are here because you were banned from the main Avatar server and submitted our appeal form. The purpose of this server is to facilitate communication between you and the mod team when reviewing your appeal.",
       author: {
         name: msg.channel.guild.name,
         icon_url: msg.channel.guild.iconURL,
@@ -16,17 +16,16 @@ module.exports = ({ bot, knex, config, commands }) => {
       fields: [
         {
           name: "Communication",
-          value: "All communication will occur through <@718577208687460482>, our modmail bot. Any abuse of this bot will resolve in removal from the server, preventing you from appealing in the future", 
+          value: "All communication will occur through <@718577208687460482>, our modmail bot. Any abuse of this bot will you being unable to appeal in the future", 
         },
         {
-          name: "Appeals",
-          value: `If your ban was permanent, there is very good reason it won't be lifted. If we wanted it to be temporary, that temporary punishment would have been issued instead. That being said, if you feel that this action was unjust or misinterpreted by our team, Please contact us via our modmail bot, <@718577208687460482>
-          \nIn the event your appeal is denied, you will be blocked from appealing for up to 3 months. The cooldown may increase with subsequent denials, up to and including the permanent inability to appeal.`
+          name: "If your appeal is accepted",
+          value: "You can rejoin the server at https://discord.gg/avatar",
         },
         {
-          name: "Invite",
-          value: "If your appeal were to be accepted, you can rejoin the server at https://discord.gg/avatar",
-        }
+          name: "If your appeal is rejected",
+          value: "In the event your appeal is denied, you will be blocked from appealing for up to 3 months, after which you are welcome to appeal again. The cooldown may increase with subsequent denials, up to and including the permanent inability to appeal."
+        },
       ],
       footer: {
         timestamp: new Date
