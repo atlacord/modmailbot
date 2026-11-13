@@ -8,7 +8,7 @@ const { getAuthUser } = require("./oauth2");
 const threads = require("./data/threads");
 const blocked = require("./data/blocked");
 const utils = require("./utils/utils");
-const { getAppealCooldownRemaining, formatAppealCooldownMessage } = require("./utils/appealCooldown");
+const { getAppealCooldownEndsAt, formatAppealCooldownMessage } = require("./utils/appealCooldown");
 
 const router = express.Router();
 const REDIRECT_URI = `${config.appealsUrl}/appeals/login`;
@@ -42,9 +42,11 @@ async function requireUser(req, res, next) {
   return req.user ? next() : res.sendStatus(401);   // the frontend expects 401 from /me
 }
 
-router.get("/me", requireUser, (req, res) => {
+router.get("/me", requireUser, async (req, res) => {
   const u = req.user;
   res.json({
+    // User appealing via the web form aren't in the guild yet, so we'll ignore the membership check
+    appealCooldownEndsAt: await getAppealCooldownEndsAt(u.id),
     id: u.id, username: u.username, globalName: u.global_name,
     avatarURL: u.avatar ? `https://cdn.discordapp.com/avatars/${u.id}/${u.avatar}.png`
                         : "https://cdn.discordapp.com/embed/avatars/0.png",
@@ -71,6 +73,9 @@ router.post("/", requireUser, async (req, res) => {
   if (await threads.findOpenThreadByUserId(userId))
     return res.status(409).send("You already have an open appeal. Our staff will contact you through modmail.");
 
+  const cooldownEndsAt = await getAppealCooldownEndsAt(userId);
+  if (cooldownEndsAt) return res.status(429).send(formatAppealCooldownMessage(cooldownEndsAt - Date.now()));
+
   // Add the user to the appeals guild. The thread is only created if they're in the guild
   try {
     const { token } = jwt.verify(req.cookies.appeal_token, config.clientSecret);
@@ -79,10 +84,6 @@ router.post("/", requireUser, async (req, res) => {
     console.error(`[appeals] Failed to add ${userId} to ${config.appealGuildId}:`, err.message);
     return res.status(403).send("We couldn't add you to the appeal server. Try joining via https://discord.gg/vVcCbwXEXr");
   }
-
-  // Done after the guild join, since the cooldown only applies to appeal guild members
-  const cooldown = await getAppealCooldownRemaining(userId);
-  if (cooldown > 0) return res.status(429).send(formatAppealCooldownMessage(cooldown));
 
   let user, thread;
   try {

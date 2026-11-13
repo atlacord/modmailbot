@@ -50,19 +50,18 @@ async function getRecentBanTimestamp(guildId, userId) {
 }
 
 /**
- * If the user is in the appeal guild and was banned from the main guild less than
- * the cooldown ago, returns the remaining cooldown in ms. Otherwise returns 0.
- * @returns {Promise<number>}
+ * If the user was banned from the main guild less than the cooldown ago, returns when
+ * the cooldown ends (ms timestamp). Otherwise returns null.
+ * @returns {Promise<number|null>}
  */
-async function getAppealCooldownRemaining(userId) {
+async function getAppealCooldownEndsAt(userId) {
   const mainGuildId = config.mainServerId && config.mainServerId[0];
-  if (! mainGuildId) return 0;
-  if (! await isMemberOf(APPEAL_GUILD_ID, userId)) return 0;
+  if (! mainGuildId) return null;
 
   try {
     await bot.getGuildBan(mainGuildId, userId);
   } catch (e) {
-    return 0; // Not banned (or ban couldn't be fetched)
+    return null; // Not banned (or ban couldn't be fetched)
   }
 
   let bannedAt;
@@ -70,11 +69,23 @@ async function getAppealCooldownRemaining(userId) {
     bannedAt = await getRecentBanTimestamp(mainGuildId, userId);
   } catch (e) {
     console.warn(`[WARN] Could not read audit log for appeal cooldown: ${e.message}`);
-    return 0;
+    return null;
   }
-  if (! bannedAt) return 0;
+  if (! bannedAt) return null;
 
-  return Math.max(0, bannedAt + APPEAL_COOLDOWN_MS - Date.now());
+  const endsAt = bannedAt + APPEAL_COOLDOWN_MS;
+  return endsAt > Date.now() ? endsAt : null;
+}
+
+/**
+ * If the user is in the appeal guild and was banned from the main guild less than
+ * the cooldown ago, returns the remaining cooldown in ms. Otherwise returns 0.
+ * @returns {Promise<number>}
+ */
+async function getAppealCooldownRemaining(userId) {
+  if (! await isMemberOf(APPEAL_GUILD_ID, userId)) return 0;
+  const endsAt = await getAppealCooldownEndsAt(userId);
+  return endsAt ? Math.max(0, endsAt - Date.now()) : 0;
 }
 
 function formatAppealCooldownMessage(remainingMs) {
@@ -83,6 +94,7 @@ function formatAppealCooldownMessage(remainingMs) {
 }
 
 module.exports = {
+  getAppealCooldownEndsAt,
   getAppealCooldownRemaining,
   formatAppealCooldownMessage,
 };
