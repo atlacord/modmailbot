@@ -8,7 +8,7 @@ const { getAuthUser } = require("./oauth2");
 const threads = require("./data/threads");
 const blocked = require("./data/blocked");
 const utils = require("./utils/utils");
-const { getAppealCooldownEndsAt, formatAppealCooldownMessage } = require("./utils/appealCooldown");
+const { isBannedFromMainGuild, getAppealCooldownEndsAt, formatAppealCooldownMessage } = require("./utils/appealCooldown");
 
 const router = express.Router();
 const REDIRECT_URI = `${config.appealsUrl}/appeals/login`;
@@ -44,9 +44,18 @@ async function requireUser(req, res, next) {
 
 router.get("/me", requireUser, async (req, res) => {
   const u = req.user;
+  let banned;
+  try {
+    banned = await isBannedFromMainGuild(u.id);
+  } catch (err) {
+    // Show the form anyway; POST / re-checks and reports the error
+    console.error(`[appeals] Couldn't check ban for ${u.id}:`, err.message);
+    banned = true;
+  }
   res.json({
+    banned,
     // User appealing via the web form aren't in the guild yet, so we'll ignore the membership check
-    appealCooldownEndsAt: await getAppealCooldownEndsAt(u.id),
+    appealCooldownEndsAt: banned ? await getAppealCooldownEndsAt(u.id) : null,
     id: u.id, username: u.username, globalName: u.global_name,
     avatarURL: u.avatar ? `https://cdn.discordapp.com/avatars/${u.id}/${u.avatar}.png`
                         : "https://cdn.discordapp.com/embed/avatars/0.png",
@@ -72,6 +81,14 @@ router.post("/", requireUser, async (req, res) => {
     return res.status(403).send("You are blocked from submitting appeals.");
   if (await threads.findOpenThreadByUserId(userId))
     return res.status(409).send("You already have an open appeal. Our staff will contact you through modmail.");
+
+  try {
+    if (! await isBannedFromMainGuild(userId))
+      return res.status(403).send("You aren't banned from the server, so there's nothing to appeal.");
+  } catch (err) {
+    console.error(`[appeals] Couldn't check ban for ${userId}:`, err.message);
+    return res.status(500).send("Something went wrong checking your ban. Please try again later.");
+  }
 
   const cooldownEndsAt = await getAppealCooldownEndsAt(userId);
   if (cooldownEndsAt) return res.status(429).send(formatAppealCooldownMessage(cooldownEndsAt - Date.now()));

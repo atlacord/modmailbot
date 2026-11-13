@@ -50,6 +50,23 @@ async function getRecentBanTimestamp(guildId, userId) {
 }
 
 /**
+ * Whether the user is currently banned from the main guild.
+ * Throws if the ban couldn't be checked (e.g. the bot is missing Ban Members there).
+ * @returns {Promise<boolean>}
+ */
+async function isBannedFromMainGuild(userId) {
+  const mainGuildId = config.mainServerId && config.mainServerId[0];
+  if (! mainGuildId) return false;
+  try {
+    await bot.getGuildBan(mainGuildId, userId);
+    return true;
+  } catch (e) {
+    if (e.code === 10026) return false; // Unknown Ban
+    throw e;
+  }
+}
+
+/**
  * If the user was banned from the main guild less than the cooldown ago, returns when
  * the cooldown ends (ms timestamp). Otherwise returns null.
  * @returns {Promise<number|null>}
@@ -59,9 +76,9 @@ async function getAppealCooldownEndsAt(userId) {
   if (! mainGuildId) return null;
 
   try {
-    await bot.getGuildBan(mainGuildId, userId);
+    if (! await isBannedFromMainGuild(userId)) return null;
   } catch (e) {
-    return null; // Not banned (or ban couldn't be fetched)
+    return null; // Ban couldn't be fetched
   }
 
   let bannedAt;
@@ -94,6 +111,7 @@ function formatAppealCooldownMessage(remainingMs) {
 }
 
 module.exports = {
+  isBannedFromMainGuild,
   getAppealCooldownEndsAt,
   getAppealCooldownRemaining,
   formatAppealCooldownMessage,
