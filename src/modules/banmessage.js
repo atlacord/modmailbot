@@ -4,7 +4,7 @@ module.exports = ({ bot, knex, config, commands }) => {
   commands.addInboxServerCommand("banmessage", [], async (msg, args, thread) => {
     let embed = {
       title: "Ban Appeals",
-      description: "The Earth King welcomes you to Lake Laogai. You are here because you were banned from the main Avatar server and submitted our appeal form. The purpose of this server is to facilitate communication between you and the mod team when reviewing your appeal.",
+      description: "The Earth King welcomes you to Lake Laogai. You are here because you were banned from the main Avatar server and submitted our [appeal form](https://appeals.atlacord.com). The purpose of this server is to allow the mod team to communicate with you when reviewing your appeal.",
       author: {
         name: msg.channel.guild.name,
         icon_url: msg.channel.guild.iconURL,
@@ -24,7 +24,7 @@ module.exports = ({ bot, knex, config, commands }) => {
         },
         {
           name: "If your appeal is rejected",
-          value: "In the event your appeal is denied, you will be blocked from appealing for up to 3 months, after which you are welcome to appeal again. The cooldown may increase with subsequent denials, up to and including the permanent inability to appeal."
+          value: "You will be blocked from appealing for up to 3 months, after which you are welcome to appeal again. The cooldown may increase with subsequent denials, up to and including the permanent inability to appeal."
         },
       ],
       footer: {
