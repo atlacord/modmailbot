@@ -51,6 +51,7 @@ async function serveLogs(req, res) {
   if (! thread) return notfound(res);
 
   let threadMessages = await thread.getThreadMessages();
+  await attachments.refreshThreadMessageAttachmentUrls(threadMessages);
 
   threadMessages = threadMessages.map(msg => {
     const embeds = msg.getMetadataValue && msg.getMetadataValue("embeds");
@@ -346,6 +347,7 @@ server.get("/logs/:id", async (req, res) => {
     return privateThread(res);
 
   const logs = await thread.getThreadMessages();
+  await attachments.refreshThreadMessageAttachmentUrls(logs);
 
   res.json(logs);
 });

@@ -243,6 +243,120 @@ const saveAttachment = (attachment) => {
   return attachmentSavePromises[attachment.id];
 };
 
+// Discord CDN attachment URLs are signed and expire (~24h). As long as the original message still exists
+// (e.g. the user's DM), the API can re-sign them via POST /attachments/refresh-urls.
+const DISCORD_ATTACHMENT_URL_REGEX = /https:\/\/(?:cdn\.discordapp\.com|media\.discordapp\.net)\/(?:ephemeral-)?attachments\/\d+\/\d+\/[^\s<>()[\]"'`]+/g;
+const REFRESH_URLS_BATCH_SIZE = 50;
+const REFRESH_MARGIN_MS = 60 * 60 * 1000; // Refresh URLs that expire within the next hour
+
+/** @type {Map<string, string>} Unsigned URL -> latest signed URL */
+const refreshedUrlCache = new Map();
+
+function isDiscordAttachmentUrl(url) {
+  return typeof url === "string" && url.match(DISCORD_ATTACHMENT_URL_REGEX) !== null;
+}
+
+function getUnsignedUrl(url) {
+  const parsed = new URL(url);
+  for (const param of ["ex", "is", "hm"]) parsed.searchParams.delete(param);
+  return parsed.toString();
+}
+
+function signedUrlIsFresh(url) {
+  const ex = new URL(url).searchParams.get("ex");
+  if (! ex) return false;
+  const expiresAt = parseInt(ex, 16) * 1000;
+  return expiresAt - Date.now() > REFRESH_MARGIN_MS;
+}
+
+/**
+ * Returns a map of each given Discord attachment URL to a currently valid signed URL.
+ * URLs that could not be refreshed (e.g. the original message was deleted) map to themselves.
+ * @param {string[]} urls
+ * @returns {Promise<Map<string, string>>}
+ */
+async function refreshDiscordAttachmentUrls(urls) {
+  const result = new Map();
+  const toRefresh = new Map(); // unsigned -> original URLs that map to it
+
+  for (const url of new Set(urls.filter(isDiscordAttachmentUrl))) {
+    let unsigned;
+    try {
+      unsigned = getUnsignedUrl(url);
+    } catch (e) {
+      result.set(url, url);
+      continue;
+    }
+
+    const cached = refreshedUrlCache.get(unsigned);
+    if (cached && signedUrlIsFresh(cached)) {
+      result.set(url, cached);
+    } else if (signedUrlIsFresh(url)) {
+      result.set(url, url);
+    } else {
+      if (! toRefresh.has(unsigned)) toRefresh.set(unsigned, []);
+      toRefresh.get(unsigned).push(url);
+    }
+  }
+
+  const unsignedUrls = Array.from(toRefresh.keys());
+  const bot = require("../bot");
+
+  for (let i = 0; i < unsignedUrls.length; i += REFRESH_URLS_BATCH_SIZE) {
+    const batch = unsignedUrls.slice(i, i + REFRESH_URLS_BATCH_SIZE);
+    try {
+      const response = await bot.requestHandler.request("POST", "/attachments/refresh-urls", true, {
+        attachment_urls: batch,
+      });
+
+      for (const { original, refreshed } of response.refreshed_urls || []) {
+        if (! refreshed) continue;
+        const unsigned = getUnsignedUrl(original);
+        refreshedUrlCache.set(unsigned, refreshed);
+        for (const url of toRefresh.get(unsigned) || []) result.set(url, refreshed);
+      }
+    } catch (e) {
+      console.error(`[WARN] Failed to refresh attachment URLs: ${e.message}`);
+    }
+  }
+
+  // Anything left over couldn't be refreshed; keep the original URL
+  for (const originals of toRefresh.values()) {
+    for (const url of originals) {
+      if (! result.has(url)) result.set(url, url);
+    }
+  }
+
+  return result;
+}
+
+/**
+ * Replaces expired Discord attachment URLs in the given thread messages (attachments, small_attachments and body)
+ * with freshly signed ones. Mutates and returns the given messages.
+ * @param {import("./ThreadMessage")[]} threadMessages
+ * @returns {Promise<import("./ThreadMessage")[]>}
+ */
+async function refreshThreadMessageAttachmentUrls(threadMessages) {
+  const urls = [];
+  for (const msg of threadMessages) {
+    urls.push(...(msg.attachments || []), ...(msg.small_attachments || []));
+    if (typeof msg.body === "string") urls.push(...(msg.body.match(DISCORD_ATTACHMENT_URL_REGEX) || []));
+  }
+
+  if (urls.length === 0) return threadMessages;
+
+  const refreshed = await refreshDiscordAttachmentUrls(urls);
+  const replace = url => refreshed.get(url) || url;
+
+  for (const msg of threadMessages) {
+    if (Array.isArray(msg.attachments)) msg.attachments = msg.attachments.map(replace);
+    if (Array.isArray(msg.small_attachments)) msg.small_attachments = msg.small_attachments.map(replace);
+    if (typeof msg.body === "string") msg.body = msg.body.replace(DISCORD_ATTACHMENT_URL_REGEX, replace);
+  }
+
+  return threadMessages;
+}
+
 /**
  * @type AddAttachmentStorageTypeFn
  */
@@ -259,5 +373,7 @@ module.exports = {
   attachmentToDiscordFileObject,
   saveAttachment,
   addStorageType,
-  downloadAttachment
+  downloadAttachment,
+  refreshDiscordAttachmentUrls,
+  refreshThreadMessageAttachmentUrls
 };
